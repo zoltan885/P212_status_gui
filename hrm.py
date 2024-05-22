@@ -85,12 +85,14 @@ mots = {'hury': 'hasep212oh:10000/p21/motor/oh_u3.04',
         'hud ':  'hasep212oh:10000/p21/motor/oh_u4.11',
         }
 
-ctrs = {'upstream': {'dev': 'hasep21eh3:10000/p21/tetramm/hasep212tetra01', 'attr': 'CurrentA'},
-        'hud': {'dev': 'hasep21eh3:10000/p21/keithley2602b/eh3_1.02', 'attr': 'measCurrent'},
-        'downstream': {'dev': 'hasep21eh3:10000/p21/keithley2602b/eh3_1.01', 'attr': 'measCurrent'},
+ctrs = {'curr up': {'dev': 'hasep21eh3:10000/p21/tetramm/hasep212tetra01', 'attr': 'CurrentA'},
+        'curr mid': {'dev': 'hasep21eh3:10000/p21/keithley2602b/eh3_1.02', 'attr': 'measCurrent'},
+        'curr down': {'dev': 'hasep21eh3:10000/p21/keithley2602b/eh3_1.01', 'attr': 'measCurrent'},
         }
 
 props = {'foil': {'property': ('FOILS', 'upstream_counter')},
+         'energy': {'property': ('GLOBAL', 'ENERGY')},
+         'absorber': {'property': ('GLOBAL', 'ABSORBER')},
          }
 
 attrDescriptor = {'position': {'color': '#0d6efd', 'border': '2px solid #0d6efd'},
@@ -188,6 +190,7 @@ class Poller():
 
     def _propertyWorker(self, index=None, db=None, prop=None, queue=None):
         logging.debug(f'Worker thread ({index} -> {prop}): started')
+        prop = prop['property']
         self.startEvent.wait()
         logging.debug(f'Worker thread ({index}): running')
         while not self.stopEvent.is_set():
@@ -197,16 +200,14 @@ class Poller():
             mess = {}
             mess['index'] = index
             try:
-                mess['value'] = db.get_property(prop[0], prop[1])[prop[1][0]]
+                mess['value'] = db.get_property(prop[0], prop[1])[prop[1]][0]
                 queue.put(mess)
                 # logging.debug(f'Message put in queue ({self.queue}): {mess}')
-            except:
-                pass
+            except Exception as e:
+                logging.error(e)
+            mess['state'] = 'UNDEFINED'
             time.sleep(10*GRACE)
         logging.debug(f'Worker thread ({index}) stopped')
-
-        # this parameter is there for hte horizontal steering
-        beamSepOffset = float(db.get_property('LAUE', 'beamSepOffset')['beamSepOffset'][0])
 
     def start(self):
         self.startEvent.set()
@@ -235,9 +236,9 @@ class AttributeRow(QtWidgets.QWidget):
         self.layout = QHBoxLayout()
         # name label
         self.label = QLabel(label)
-        self.label.setMinimumWidth(100)
+        self.label.setMinimumWidth(150)
         self.label.setStyleSheet('''QLabel {
-                                            font-size: 30px;
+                                            font-size: 26px;
                                             font-weight: 600;
                                             }''')
         # value
@@ -279,15 +280,15 @@ class AttributeRow(QtWidgets.QWidget):
 
 
 class PropertyRow(QtWidgets.QWidget):
-    def __init__(self, label: str, value: str):
+    def __init__(self, label: str, value: str, formatString=None):
         super(PropertyRow, self).__init__()
-
+        self.formatString = formatString
         self.layout = QHBoxLayout()
         # name label
         self.label = QLabel(label)
-        self.label.setMinimumWidth(100)
+        self.label.setMinimumWidth(150)
         self.label.setStyleSheet('''QLabel {
-                                            font-size: 30px;
+                                            font-size: 26px;
                                             font-weight: 600;
                                             }''')
         # value
@@ -305,8 +306,14 @@ class PropertyRow(QtWidgets.QWidget):
         self.layout.addWidget(self.value, 1)
         self.setLayout(self.layout)
 
-    def update(self, label=None, value=None):
-        pass
+    def update(self, label=None, value=None, state=None, color=None):
+        if label is not None:
+            self.label.setText(label)
+        if value is not None:
+            if self.formatString is not None:
+                self.value.setText(f'{value:{self.formatString}}')
+            else:
+                self.value.setText(f'{value}')
 
 
 class MainWidget(QtWidgets.QWidget):
@@ -336,43 +343,16 @@ class MainWidget(QtWidgets.QWidget):
             w = PropertyRow(k, 'undef')
             self.widgets.append(w)
             grid.addWidget(w)
-            self.poller.add_property(v)
-
-        # for i in range(9):
-        #     ty = 'counter' if np.random.rand() < 0.4 else 'position'
-        #     w = AttributeRow('label', 0.5123, 'ON', attrType=ty)
-        #     self.widgets.append(w)
-        #     grid.addWidget(w)
+            self.poller.add_property(v, host='hasep212oh', port=10000)
 
         self.frame_2.setLayout(grid)
 
         self.timerFast = QTimer()
         self.timerFast.start(int(1000*FASTTIMER))
         self.timerFast.timeout.connect(self.updateFromQueue)
-
         self.timerSlow = QTimer()
         self.timerSlow.start(int(1000*SLOWTIMER))
         self.timerSlow.timeout.connect(self.watchdog)
-
-    # def _upd(self, *args):
-    #     key = args[0]
-    #     self.widgets[key].value.setText(f'{np.random.rand():.4f}')
-    #     state = list(_TangoStateColors)[np.random.randint(1000) % 9]
-    #     # self.widgets[key].state.setStyleSheet('QLabel {background-color: %s}' % _TangoStateColors[state])
-    #     color = _TangoStateColors[state]
-    #     self.widgets[key].state.setStyleSheet('''QLabel {
-    #                                             color: %s;
-    #                                             font-size: 30px;
-    #                                             font-weight: 600;
-    #                                             border-radius: 5px;
-    #                                             border: 2px solid black;
-    #                                             background-color: %s;
-    #                                             }''' % (color, color))
-    #     self.widgets[key].state.setText(state)
-
-    # def update(self):
-    #     for i, w in enumerate(self.widgets):
-    #         self._upd(i)
 
     def _updFromQueue(self, message):
         '''
@@ -384,22 +364,13 @@ class MainWidget(QtWidgets.QWidget):
         index = message['index']
         if index == -1:
             return
-        # value = message['value']
-        # state = str(message['state'])
-
-        # update(label=None, value=None, state=None, color=None):
         self.widgets[index-1].update(value=message['value'], state=str(message['state']))
-
-        # self.widgets[index-1].value.setText(f'{value:.4e}')
-        # self.widgets[index-1].state.setStyleSheet('QLabel {background-color: %s}' % _TangoStateColors[state])
-        # self.widgets[index-1].state.setText(state)
 
     def updateFromQueue(self):
         qu = self.poller.queue
         # logging.debug(f'updateFromQueue called {qu}')
         while not qu.empty():
             message = qu.get()
-            # logging.debug(f'{message}')
             self._updFromQueue(message)
         time.sleep(0.01)
 
@@ -422,8 +393,6 @@ def main():
     main = MainWidget()
 
     pollers = main.pollers
-    # for n, m in mots.items():
-    #     pollers[0].add_attr(m, 'position')
     # atexit.register(exitHandler, pollers)  # this would be good, but it only handles terminal exits, and not the gui
     app.aboutToQuit.connect(lambda x=pollers: exitHandler(x))
     # app.setStyleSheet(Path('style.qss').read_text())
