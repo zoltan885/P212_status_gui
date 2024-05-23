@@ -10,7 +10,7 @@ hrm test file
 
 from poller import Poller
 from gui_parts import AttributeRow, PropertyRow
-from setup import mots, props, ctrs
+from configuration import mots, props, ctrs
 
 from PyQt5.QtWidgets import (
     QMainWindow,
