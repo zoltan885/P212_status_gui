@@ -66,10 +66,9 @@ class AttributeRow(QtWidgets.QWidget):
         if label is not None:
             self.label.setText(label)
         if value is not None:
+            self.value.setText(f'{value:{self.formatString}}')
             if self.compact and state is not None:
-                self.value.setText(f'{value:{self.formatString}, border: 2px solid {_TangoStateColors[state]}}')
-            else:
-                self.value.setText(f'{value:{self.formatString}}')
+                self.value.StyleSheet('QLabel {border: 2px solid %s}' % _TangoStateColors[state])
         if state is not None:
             self.state.setStyleSheet('QLabel {background-color: %s}' % _TangoStateColors[state])
             self.state.setText(state)
