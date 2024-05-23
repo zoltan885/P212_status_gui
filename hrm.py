@@ -79,7 +79,10 @@ class MainWidget(QtWidgets.QWidget):
             for k, v in getattr(conf, p).items():
                 if 'attr' in v.keys():
                     attr_type = 'position' if v['attr'] == 'position' else 'counter'
-                    w = AttributeRow(k, 0.0000, 'ON', attrType=attr_type)
+                    format_string = '.4f'
+                    if 'format' in v.keys():
+                        format_string = v['format']
+                    w = AttributeRow(k, 0.0000, 'ON', attrType=attr_type, formatString=format_string)
                     self.widgets.append(w)
                     grid2.addWidget(w)
                     self.poller.add_attr(v['dev'], v['attr'], state=True)
