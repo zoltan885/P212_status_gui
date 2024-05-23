@@ -10,7 +10,8 @@ hrm test file
 
 from poller import Poller
 from gui_parts import AttributeRow, PropertyRow
-from configuration import mots, props, ctrs, frontend, undulator
+import configuration as conf
+# from configuration import mots, props, ctrs, frontend, undulator
 
 from PyQt5.QtWidgets import (
     QMainWindow,
@@ -45,10 +46,12 @@ consoleHandler.setFormatter(logFormatter)
 rootLogger.addHandler(consoleHandler)
 
 
-# resource:
+# resources:
 # https://doc.qt.io/qt-5/stylesheet-examples.html
 # https://stackoverflow.com/questions/6784084/how-to-pass-arguments-to-functions-by-the-click-of-button-in-pyqt
 # https://stackoverflow.com/questions/15727420/using-logging-in-multiple-modules
+# Detachable tabs...
+# https://stackoverflow.com/questions/47267195/in-pyqt-is-it-possible-to-detach-tabs-from-a-qtabwidget
 
 _coolBlue = '#0d6efd'
 
@@ -72,35 +75,52 @@ class MainWidget(QtWidgets.QWidget):
         self.poller = Poller()
         self.pollers.append(self.poller)
 
-        for k, v in mots.items():
-            w = AttributeRow(k, 0.0000, 'ON', attrType='position')
-            self.widgets.append(w)
-            grid2.addWidget(w)
-            self.poller.add_attr(v, 'position', state=True)
+        for p in conf.visible:
+            for k, v in getattr(conf, p).items():
+                if 'attr' in v.keys():
+                    attr_type = 'position' if v['attr'] == 'position' else 'counter'
+                    w = AttributeRow(k, 0.0000, 'ON', attrType=attr_type)
+                    self.widgets.append(w)
+                    grid2.addWidget(w)
+                    self.poller.add_attr(v['dev'], v['attr'], state=True)
+                elif 'property' in v.keys():
+                    w = PropertyRow(k, 'undef')
+                    self.widgets.append(w)
+                    grid2.addWidget(w)
+                    host = 'hasep212oh'
+                    if 'host' in v.keys():
+                        host = v['host']
+                    self.poller.add_property(v, host=host, port=10000)
 
-        for k, v in ctrs.items():
-            w = AttributeRow(k, 0.0000, 'ON', attrType='counter', formatString='.3e')
-            self.widgets.append(w)
-            grid2.addWidget(w)
-            self.poller.add_attr(v['dev'], v['attr'], state=False)
+        # for k, v in mots.items():
+        #     w = AttributeRow(k, 0.0000, 'ON', attrType='position')
+        #     self.widgets.append(w)
+        #     grid2.addWidget(w)
+        #     self.poller.add_attr(v, 'position', state=True)
 
-        for k, v in props.items():
-            w = PropertyRow(k, 'undef')
-            self.widgets.append(w)
-            grid2.addWidget(w)
-            self.poller.add_property(v, host='hasep212oh', port=10000)
+        # for k, v in ctrs.items():
+        #     w = AttributeRow(k, 0.0000, 'ON', attrType='counter', formatString='.3e')
+        #     self.widgets.append(w)
+        #     grid2.addWidget(w)
+        #     self.poller.add_attr(v['dev'], v['attr'], state=False)
 
-        for k, v in frontend.items():
-            w = AttributeRow(k, 0.0000, 'ON', attrType='position')
-            self.widgets.append(w)
-            grid.addWidget(w)
-            self.poller.add_attr(v, 'position', state=True)
+        # for k, v in props.items():
+        #     w = PropertyRow(k, 'undef')
+        #     self.widgets.append(w)
+        #     grid2.addWidget(w)
+        #     self.poller.add_property(v, host='hasep212oh', port=10000)
 
-        for k, v in undulator.items():
-            w = AttributeRow(k, 0.0000, 'ON', attrType='counter', formatString='.0f')
-            self.widgets.append(w)
-            grid.addWidget(w)
-            self.poller.add_attr(v['dev'], v['attr'], state=True)
+        # for k, v in frontend.items():
+        #     w = AttributeRow(k, 0.0000, 'ON', attrType='position')
+        #     self.widgets.append(w)
+        #     grid.addWidget(w)
+        #     self.poller.add_attr(v, 'position', state=True)
+
+        # for k, v in undulator.items():
+        #     w = AttributeRow(k, 0.0000, 'ON', attrType='counter', formatString='.0f')
+        #     self.widgets.append(w)
+        #     grid.addWidget(w)
+        #     self.poller.add_attr(v['dev'], v['attr'], state=True)
 
         self.frame.setLayout(grid)
         self.frame_2.setLayout(grid2)
