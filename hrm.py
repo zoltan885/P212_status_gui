@@ -10,7 +10,7 @@ hrm test file
 
 from poller import Poller
 from gui_parts import AttributeRow, PropertyRow
-from configuration import mots, props, ctrs
+from configuration import mots, props, ctrs, frontend, undulator
 
 from PyQt5.QtWidgets import (
     QMainWindow,
@@ -67,28 +67,43 @@ class MainWidget(QtWidgets.QWidget):
         self.pollers = []
         self.widgets = []
         grid = QVBoxLayout()
+        grid2 = QVBoxLayout()
+
         self.poller = Poller()
         self.pollers.append(self.poller)
 
         for k, v in mots.items():
             w = AttributeRow(k, 0.0000, 'ON', attrType='position')
             self.widgets.append(w)
-            grid.addWidget(w)
+            grid2.addWidget(w)
             self.poller.add_attr(v, 'position', state=True)
 
         for k, v in ctrs.items():
             w = AttributeRow(k, 0.0000, 'ON', attrType='counter', formatString='.3e')
             self.widgets.append(w)
-            grid.addWidget(w)
+            grid2.addWidget(w)
             self.poller.add_attr(v['dev'], v['attr'], state=False)
 
         for k, v in props.items():
             w = PropertyRow(k, 'undef')
             self.widgets.append(w)
-            grid.addWidget(w)
+            grid2.addWidget(w)
             self.poller.add_property(v, host='hasep212oh', port=10000)
 
-        self.frame_2.setLayout(grid)
+        for k, v in frontend.items():
+            w = AttributeRow(k, 0.0000, 'ON', attrType='position')
+            self.widgets.append(w)
+            grid.addWidget(w)
+            self.poller.add_attr(v, 'position', state=True)
+
+        for k, v in undulator.items():
+            w = AttributeRow(k, 0.0000, 'ON', attrType='counter', formatString='.0f')
+            self.widgets.append(w)
+            grid.addWidget(w)
+            self.poller.add_attr(v['dev'], v['attr'], state=True)
+
+        self.frame.setLayout(grid)
+        self.frame_2.setLayout(grid2)
 
         self.timerFast = QTimer()
         self.timerFast.start(int(1000*FASTTIMER))

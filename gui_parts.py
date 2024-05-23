@@ -24,6 +24,7 @@ class AttributeRow(QtWidgets.QWidget):
         self.layout = QHBoxLayout()
         # name label
         self.label = QLabel(label)
+        self.label.setMaximumHeight(40)
         self.label.setMinimumWidth(150)
         self.label.setStyleSheet('''QLabel {
                                             font-size: 26px;
@@ -32,6 +33,7 @@ class AttributeRow(QtWidgets.QWidget):
         # value
         color = attrDescriptor[attrType]['color']
         self.value = QLabel(str(value))
+        self.label.setMaximumHeight(40)
         self.value.setMinimumWidth(150)
         self.value.setStyleSheet('''QLabel {
                                             color: %s;
@@ -42,6 +44,7 @@ class AttributeRow(QtWidgets.QWidget):
                                             }''' % (color, color))
         # state
         self.state = QLabel('UNKNOWN')
+        self.label.setMaximumHeight(40)
         self.state.setMinimumWidth(80)
         self.state.setMaximumWidth(90)
         self.state.setStyleSheet('''QLabel {
