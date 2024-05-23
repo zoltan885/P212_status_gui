@@ -17,11 +17,12 @@ log = logging.getLogger(__name__)
 
 
 class AttributeRow(QtWidgets.QWidget):
-    def __init__(self, label: str, value: float, state: str, attrType='position', formatString='.4f', compact=False):
+    def __init__(self, label: str, value: float, state: str, attrType='position', formatString='.4f', widgetStyle='number'):
         assert attrType in list(attrDescriptor.keys())
+        self.attrType = attrType
         super(AttributeRow, self).__init__()
         self.formatString = formatString
-        self.compact = compact
+        self.widgetStyle = widgetStyle
         self.layout = QHBoxLayout()
         # name label
         self.label = QLabel(label)
@@ -32,7 +33,7 @@ class AttributeRow(QtWidgets.QWidget):
                                             font-weight: 600;
                                             }''')
         # value
-        color = attrDescriptor[attrType]['color']
+        color = attrDescriptor[self.attrType]['color']
         self.value = QLabel(str(value))
         self.label.setMaximumHeight(40)
         self.value.setMinimumWidth(150)
@@ -41,8 +42,8 @@ class AttributeRow(QtWidgets.QWidget):
                                             font-size: 30px;
                                             font-weight: 600;
                                             border-radius: 5px;
-                                            border: 2px solid %s;
-                                            }''' % (color, color))
+                                            border: 2px solid black;
+                                            }''' % (color))
         # state
         self.state = QLabel('UNKNOWN')
         self.label.setMaximumHeight(40)
@@ -58,17 +59,37 @@ class AttributeRow(QtWidgets.QWidget):
 
         self.layout.addWidget(self.label, 0)
         self.layout.addWidget(self.value, 1)
-        if not self.compact:
+        if self.widgetStyle == 'full':
             self.layout.addWidget(self.state, 2)
         self.setLayout(self.layout)
 
     def update(self, label=None, value=None, state=None, color=None):
+        if self.widgetStyle == 'nostate': state = None
         if label is not None:
             self.label.setText(label)
         if value is not None:
             self.value.setText(f'{value:{self.formatString}}')
-            if self.compact and state is not None:
-                self.value.StyleSheet('QLabel {border: 2px solid %s}' % _TangoStateColors[state])
+            if self.widgetStyle == 'frame' and state is not None:
+                color = attrDescriptor[self.attrType]['color']
+                self.value.setStyleSheet('''QLabel {
+                                                    color: %s;
+                                                    font-size: 30px;
+                                                    font-weight: 600;
+                                                    border-radius: 5px;
+                                                    border: 2px solid %s;
+                                                    }''' % (color, _TangoStateColors[state]))
+            elif self.widgetStyle == 'number' and state is not None:
+                self.value.setStyleSheet('''QLabel {
+                                                    color: %s;
+                                                    font-size: 30px;
+                                                    font-weight: 600;
+                                                    }''' % (_TangoStateColors[state]))
+            elif self.widgetStyle == 'background' and state is not None:
+                self.value.setStyleSheet('''QLabel {
+                                                    background-color: %s;
+                                                    font-size: 30px;
+                                                    font-weight: 600;
+                                                    }''' % (_TangoStateColors[state]))
         if state is not None:
             self.state.setStyleSheet('QLabel {background-color: %s}' % _TangoStateColors[state])
             self.state.setText(state)
@@ -94,9 +115,7 @@ class PropertyRow(QtWidgets.QWidget):
                                             color: %s;
                                             font-size: 30px;
                                             font-weight: 600;
-                                            border-radius: 5px;
-                                            border: 2px solid %s;
-                                            }''' % (color, color))
+                                            }''' % (color))
         self.layout.addWidget(self.label, 0)
         self.layout.addWidget(self.value, 1)
         self.setLayout(self.layout)

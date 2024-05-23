@@ -82,9 +82,9 @@ class MainWidget(QtWidgets.QWidget):
                 if 'attr' in v.keys():
                     attr_type = 'position' if v['attr'] == 'position' else 'counter'
                     v.setdefault('format', '.4f')  # should be somewhere in settings
-                    v.setdefault('compact', True)
+                    v.setdefault('widgetStyle', 'number')
                     w = AttributeRow(k, 0.0000, 'ON', attrType=attr_type,
-                                     formatString=v['format'], compact=v['compact'])
+                                     formatString=v['format'], widgetStyle=v['widgetStyle'])
                     self.widgets.append(w)
                     grid2.addWidget(w)
                     self.poller.add_attr(v['dev'], v['attr'], state=True)
