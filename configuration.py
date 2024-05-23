@@ -8,7 +8,7 @@ Created on Thu May 23 10:21:49 2024
 
 visible = ['frontend', 'undulator', 'mots', 'ctrs', 'props']
 
-frontend = {'ps1off': {'dev': 'hasepfe:10000/p21/motor/fe.34', 'attr': 'position'},
+frontend = {'ps1off': {'dev': 'hasepfe:10000/p21/motor/fe.34', 'attr': 'position', 'compact': False},
             'ps1gap': {'dev': 'hasepfe:10000/p21/motor/fe.33', 'attr': 'position'},
             'ps2off': {'dev': 'hasepfe:10000/p21/motor/fe.36', 'attr': 'position'},
             'ps2gap': {'dev': 'hasepfe:10000/p21/motor/fe.35', 'attr': 'position'},

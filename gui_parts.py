@@ -17,10 +17,11 @@ log = logging.getLogger(__name__)
 
 
 class AttributeRow(QtWidgets.QWidget):
-    def __init__(self, label: str, value: float, state: str, attrType='position', formatString='.4f'):
+    def __init__(self, label: str, value: float, state: str, attrType='position', formatString='.4f', compact=False):
         assert attrType in list(attrDescriptor.keys())
         super(AttributeRow, self).__init__()
         self.formatString = formatString
+        self.compact = compact
         self.layout = QHBoxLayout()
         # name label
         self.label = QLabel(label)
@@ -57,14 +58,18 @@ class AttributeRow(QtWidgets.QWidget):
 
         self.layout.addWidget(self.label, 0)
         self.layout.addWidget(self.value, 1)
-        self.layout.addWidget(self.state, 2)
+        if not self.compact:
+            self.layout.addWidget(self.state, 2)
         self.setLayout(self.layout)
 
     def update(self, label=None, value=None, state=None, color=None):
         if label is not None:
             self.label.setText(label)
         if value is not None:
-            self.value.setText(f'{value:{self.formatString}}')
+            if self.compact and state is not None:
+                self.value.setText(f'{value:{self.formatString}, border: 2px solid {_TangoStateColors[state]}}')
+            else:
+                self.value.setText(f'{value:{self.formatString}}')
         if state is not None:
             self.state.setStyleSheet('QLabel {background-color: %s}' % _TangoStateColors[state])
             self.state.setText(state)

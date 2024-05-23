@@ -52,6 +52,8 @@ rootLogger.addHandler(consoleHandler)
 # https://stackoverflow.com/questions/15727420/using-logging-in-multiple-modules
 # Detachable tabs...
 # https://stackoverflow.com/questions/47267195/in-pyqt-is-it-possible-to-detach-tabs-from-a-qtabwidget
+# Quest DB
+# https://py-questdb-client.readthedocs.io/en/latest/
 
 _coolBlue = '#0d6efd'
 
@@ -79,12 +81,10 @@ class MainWidget(QtWidgets.QWidget):
             for k, v in getattr(conf, p).items():
                 if 'attr' in v.keys():
                     attr_type = 'position' if v['attr'] == 'position' else 'counter'
-                    v.setdefault('format', '.4f')
-                    # format_string = v['format']
-                    # format_string = '.4f'
-                    # if 'format' in v.keys():
-                    #     format_string = v['format']
-                    w = AttributeRow(k, 0.0000, 'ON', attrType=attr_type, formatString=v['format'])
+                    v.setdefault('format', '.4f')  # should be somewhere in settings
+                    v.setdefault('compact', True)
+                    w = AttributeRow(k, 0.0000, 'ON', attrType=attr_type,
+                                     formatString=v['format'], compact=v['compact'])
                     self.widgets.append(w)
                     grid2.addWidget(w)
                     self.poller.add_attr(v['dev'], v['attr'], state=True)
@@ -92,38 +92,8 @@ class MainWidget(QtWidgets.QWidget):
                     w = PropertyRow(k, 'undef')
                     self.widgets.append(w)
                     grid2.addWidget(w)
-                    v.setdefault('host', 'hasep212oh')
+                    v.setdefault('host', 'hasep212oh')  # should be somewhere in settings
                     self.poller.add_property(v, host=v['host'], port=10000)
-
-        # for k, v in mots.items():
-        #     w = AttributeRow(k, 0.0000, 'ON', attrType='position')
-        #     self.widgets.append(w)
-        #     grid2.addWidget(w)
-        #     self.poller.add_attr(v, 'position', state=True)
-
-        # for k, v in ctrs.items():
-        #     w = AttributeRow(k, 0.0000, 'ON', attrType='counter', formatString='.3e')
-        #     self.widgets.append(w)
-        #     grid2.addWidget(w)
-        #     self.poller.add_attr(v['dev'], v['attr'], state=False)
-
-        # for k, v in props.items():
-        #     w = PropertyRow(k, 'undef')
-        #     self.widgets.append(w)
-        #     grid2.addWidget(w)
-        #     self.poller.add_property(v, host='hasep212oh', port=10000)
-
-        # for k, v in frontend.items():
-        #     w = AttributeRow(k, 0.0000, 'ON', attrType='position')
-        #     self.widgets.append(w)
-        #     grid.addWidget(w)
-        #     self.poller.add_attr(v, 'position', state=True)
-
-        # for k, v in undulator.items():
-        #     w = AttributeRow(k, 0.0000, 'ON', attrType='counter', formatString='.0f')
-        #     self.widgets.append(w)
-        #     grid.addWidget(w)
-        #     self.poller.add_attr(v['dev'], v['attr'], state=True)
 
         self.frame.setLayout(grid)
         self.frame_2.setLayout(grid2)
