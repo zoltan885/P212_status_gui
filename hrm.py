@@ -79,10 +79,12 @@ class MainWidget(QtWidgets.QWidget):
             for k, v in getattr(conf, p).items():
                 if 'attr' in v.keys():
                     attr_type = 'position' if v['attr'] == 'position' else 'counter'
-                    format_string = '.4f'
-                    if 'format' in v.keys():
-                        format_string = v['format']
-                    w = AttributeRow(k, 0.0000, 'ON', attrType=attr_type, formatString=format_string)
+                    v.setdefault('format', '.4f')
+                    # format_string = v['format']
+                    # format_string = '.4f'
+                    # if 'format' in v.keys():
+                    #     format_string = v['format']
+                    w = AttributeRow(k, 0.0000, 'ON', attrType=attr_type, formatString=v['format'])
                     self.widgets.append(w)
                     grid2.addWidget(w)
                     self.poller.add_attr(v['dev'], v['attr'], state=True)
@@ -90,10 +92,8 @@ class MainWidget(QtWidgets.QWidget):
                     w = PropertyRow(k, 'undef')
                     self.widgets.append(w)
                     grid2.addWidget(w)
-                    host = 'hasep212oh'
-                    if 'host' in v.keys():
-                        host = v['host']
-                    self.poller.add_property(v, host=host, port=10000)
+                    v.setdefault('host', 'hasep212oh')
+                    self.poller.add_property(v, host=v['host'], port=10000)
 
         # for k, v in mots.items():
         #     w = AttributeRow(k, 0.0000, 'ON', attrType='position')

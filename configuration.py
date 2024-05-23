@@ -15,7 +15,7 @@ frontend = {'ps1off': {'dev': 'hasepfe:10000/p21/motor/fe.34', 'attr': 'position
             'ps2in': {'dev': 'hasepfe:10000/p21/motor/fe.37', 'attr': 'position'},
             'ps2out': {'dev': 'hasepfe:10000/p21/motor/fe.38', 'attr': 'position'},
             }
-undulator = {'gap': {'dev': 'hasep212oh:10000/p21/plcundulator/oh.01', 'attr': 'CurrentGap'},
+undulator = {'gap': {'dev': 'hasep212oh:10000/p21/plcundulator/oh.01', 'attr': 'CurrentGap', 'format': '.0f'},
              }
 
 mots = {'hury': {'dev': 'hasep212oh:10000/p21/motor/oh_u3.04', 'attr': 'position'},
@@ -27,9 +27,9 @@ mots = {'hury': {'dev': 'hasep212oh:10000/p21/motor/oh_u3.04', 'attr': 'position
         'hud ': {'dev': 'hasep212oh:10000/p21/motor/oh_u4.11', 'attr': 'position'},
         }
 
-ctrs = {'curr up': {'dev': 'hasep21eh3:10000/p21/tetramm/hasep212tetra01', 'attr': 'CurrentA', 'format': '.4e'},
-        'curr mid': {'dev': 'hasep21eh3:10000/p21/keithley2602b/eh3_1.02', 'attr': 'measCurrent', 'format': '.4e'},
-        'curr down': {'dev': 'hasep21eh3:10000/p21/keithley2602b/eh3_1.01', 'attr': 'measCurrent',  'format': '.4e'},
+ctrs = {'curr up': {'dev': 'hasep21eh3:10000/p21/tetramm/hasep212tetra01', 'attr': 'CurrentA', 'format': '.3e'},
+        'curr mid': {'dev': 'hasep21eh3:10000/p21/keithley2602b/eh3_1.02', 'attr': 'measCurrent', 'format': '.3e'},
+        'curr down': {'dev': 'hasep21eh3:10000/p21/keithley2602b/eh3_1.01', 'attr': 'measCurrent',  'format': '.3e'},
         }
 
 props = {'foil': {'property': ('FOILS', 'current_foil'), 'host': 'hasep212oh'},
