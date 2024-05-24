@@ -41,7 +41,7 @@ class AttributeRow(QtWidgets.QWidget):
                                             color: %s;
                                             font-size: 30px;
                                             font-weight: 600;
-                                            border-radius: 5px;
+                                            border-radius: 3px;
                                             border: 2px solid black;
                                             }''' % (color))
         # state
@@ -53,7 +53,7 @@ class AttributeRow(QtWidgets.QWidget):
                                             color: black;
                                             font-size: 30px;
                                             font-weight: 600;
-                                            border-radius: 5px;
+                                            border-radius: 3px;
                                             border: 2px solid black;
                                             }''')
 
@@ -64,7 +64,8 @@ class AttributeRow(QtWidgets.QWidget):
         self.setLayout(self.layout)
 
     def update(self, label=None, value=None, state=None, color=None):
-        if self.widgetStyle == 'nostate': state = None
+        if self.widgetStyle == 'nostate':
+            state = None
         if label is not None:
             self.label.setText(label)
         if value is not None:
@@ -75,7 +76,7 @@ class AttributeRow(QtWidgets.QWidget):
                                                     color: %s;
                                                     font-size: 30px;
                                                     font-weight: 600;
-                                                    border-radius: 5px;
+                                                    border-radius: 3px;
                                                     border: 2px solid %s;
                                                     }''' % (color, _TangoStateColors[state]))
             elif self.widgetStyle == 'number' and state is not None:
@@ -87,11 +88,13 @@ class AttributeRow(QtWidgets.QWidget):
             elif self.widgetStyle == 'background' and state is not None:
                 self.value.setStyleSheet('''QLabel {
                                                     background-color: %s;
+                                                    color: black;
                                                     font-size: 30px;
                                                     font-weight: 600;
+                                                    border-radius: 3px;
                                                     }''' % (_TangoStateColors[state]))
         if state is not None:
-            self.state.setStyleSheet('QLabel {background-color: %s}' % _TangoStateColors[state])
+            self.state.setStyleSheet('QLabel {background-color: %s; border-radius: 3px;}' % _TangoStateColors[state])
             self.state.setText(state)
 
 

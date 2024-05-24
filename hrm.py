@@ -11,6 +11,7 @@ hrm test file
 from poller import Poller
 from gui_parts import AttributeRow, PropertyRow
 import configuration as conf
+from _settings import _defaults
 # from configuration import mots, props, ctrs, frontend, undulator
 
 from PyQt5.QtWidgets import (
@@ -67,7 +68,7 @@ PROGRESS = '-|'
 class MainWidget(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(MainWidget, self).__init__(*args, **kwargs)
-        uic.loadUi('hrm.ui', self)
+        uic.loadUi('hrm2.ui', self)
         self.t0 = time.time()
         self.pollers = []
         self.widgets = []
@@ -81,8 +82,8 @@ class MainWidget(QtWidgets.QWidget):
             for k, v in getattr(conf, p).items():
                 if 'attr' in v.keys():
                     attr_type = 'position' if v['attr'] == 'position' else 'counter'
-                    v.setdefault('format', '.4f')  # should be somewhere in settings
-                    v.setdefault('widgetStyle', 'number')
+                    v.setdefault('format', _defaults['attr']['format'])
+                    v.setdefault('widgetStyle', _defaults['attr']['widgetStyle'])
                     w = AttributeRow(k, 0.0000, 'ON', attrType=attr_type,
                                      formatString=v['format'], widgetStyle=v['widgetStyle'])
                     self.widgets.append(w)
@@ -92,7 +93,7 @@ class MainWidget(QtWidgets.QWidget):
                     w = PropertyRow(k, 'undef')
                     self.widgets.append(w)
                     grid2.addWidget(w)
-                    v.setdefault('host', 'hasep212oh')  # should be somewhere in settings
+                    v.setdefault('host', _defaults['prop']['host'])
                     self.poller.add_property(v, host=v['host'], port=10000)
 
         self.frame.setLayout(grid)
@@ -128,9 +129,9 @@ class MainWidget(QtWidgets.QWidget):
     def watchdog(self):
         dt = time.time() - self.t0
         if int(2*dt) % 2 == 0:
-            self.label_2.setText('-')
+            self.label.setText('-')
         else:
-            self.label_2.setText('|')
+            self.label.setText('|')
 
 
 def exitHandler(pollers):

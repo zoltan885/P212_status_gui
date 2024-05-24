@@ -8,6 +8,21 @@ Created on Thu May 23 10:21:49 2024
 
 visible = ['frontend', 'undulator', 'mots', 'ctrs', 'props']
 
+grouping = {
+    'tabs': {
+        'tab1': {
+            'group1': ['frontend',
+                       'undulator'
+                       ],
+            'group2': ['mots',
+                       'ctrs',
+                       'props']
+        },
+        'tab2': {'group': ['props']
+                 }
+    },
+}
+
 frontend = {'ps1off': {'dev': 'hasepfe:10000/p21/motor/fe.34', 'attr': 'position', 'widgetStyle': 'full'},
             'ps1gap': {'dev': 'hasepfe:10000/p21/motor/fe.33', 'attr': 'position', 'widgetStyle': 'frame'},
             'ps2off': {'dev': 'hasepfe:10000/p21/motor/fe.36', 'attr': 'position', 'widgetStyle': 'number'},

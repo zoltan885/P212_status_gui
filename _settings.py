@@ -13,7 +13,7 @@ attrDescriptor = {'position': {'color': '#000000', 'border': '2px solid #0d6efd'
                   'globalProp': {'color': '#10bfde', 'border': '1px #10bfde'},
                   }
 
-_TangoStateColors = {'ON': '#42f545',
+_TangoStateColors = {'ON': '#6beda5',  # '#42f545',
                      'OFF': '#f4f7f2',
                      'MOVING': '#427ef5',
                      'STANDBY': '#f5f253',
@@ -22,3 +22,10 @@ _TangoStateColors = {'ON': '#42f545',
                      'ALARM': '#eb962f',
                      'DISABLE': '#f037fa',
                      'UNKNOWN': '#808080'}
+
+_defaults = {'attr': {'format': '.4f',
+                      'widgetStyle': 'background',
+                      },
+             'prop': {'host': 'hasep212oh',
+                      },
+             }
