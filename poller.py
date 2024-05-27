@@ -86,7 +86,7 @@ class Poller():
                 continue
             mess = {}
             mess['index'] = index
-            mess['ID'] = 'attr:{attrProxy.get_device_proxy().name()}/{attrProxy.name()}'
+            mess['ID'] = f'attr:{attrProxy.get_device_proxy().name()}/{attrProxy.name()}'
             try:
                 # mess['value'] = attrProxy.read()  # this would be nice, but can not be pickled: RuntimeError
                 mess['value'] = attrProxy.read().value
