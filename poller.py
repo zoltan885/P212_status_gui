@@ -132,7 +132,7 @@ class Poller():
                 continue
             mess = {}
             mess['index'] = index
-            mess['ID'] = f'prop:{db}/{prop[0]}/{prop[1]}'
+            mess['ID'] = f'prop:{db.get_db_host()}/{prop[0]}/{prop[1]}'
             try:
                 mess['value'] = db.get_property(prop[0], prop[1])[prop[1]][0]
                 queue.put(mess)
