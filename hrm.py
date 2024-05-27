@@ -130,7 +130,7 @@ class MainWindow(QMainWindow):
                                                   formatString=v['format'], widgetStyle=v['widgetStyle'])
                             group_layout.addWidget(widget)
                             self.widgets.append(widget)
-                            self.all_update_widgets[str(uuid.uuid4())] = widget
+                            self.all_update_widgets[f"attr:{v['dev']}/{v['attr']}"] = widget
                             self.poller.add_attr(v['dev'], v['attr'], state=True)
 
                         elif 'property' in v.keys():
@@ -138,7 +138,7 @@ class MainWindow(QMainWindow):
                             group_layout.addWidget(widget)
                             v.setdefault('host', _defaults['prop']['host'])
                             self.widgets.append(widget)
-                            self.all_update_widgets[str(uuid.uuid4())] = (widget)
+                            self.all_update_widgets[f"prop:{v['host']}/{v['property'][0]}/{v['property'][1]}"] = widget
                             self.poller.add_property(v, host=v['host'], port=10000)
                     group.setLayout(group_layout)
                     scroll_layout.addWidget(group)
@@ -161,6 +161,8 @@ class MainWindow(QMainWindow):
         self.timerSlow = QTimer()
         self.timerSlow.start(int(1000*SLOWTIMER))
         self.timerSlow.timeout.connect(self.watchdog)
+
+        self.print(self.all_update_widgets)
 
     def _updFromQueue(self, message):
         '''
