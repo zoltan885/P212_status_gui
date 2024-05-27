@@ -41,7 +41,7 @@ class Poller():
         self.stopEvent = Event()
         self.queue = Queue(20000)
         self.threads = []
-        self.threads_dct = {}
+        self._threads_dct = {}
         self.log = {}  # this is in preparation to some sort of logging even if only for moving average for smooth values
         self.last_state = []  # this is to record the last state
         self.startEvent.set()
@@ -73,7 +73,7 @@ class Poller():
         self.threads.append(thr)
         # this would currently overwrite if there are twice the same attribute added
         if False:
-            self.threads_dct[attrProxy.get_device_proxy().name() + '/' + attrProxy.name()] = threadtuple(index, thr)
+            self._threads_dct[attrProxy.get_device_proxy().name() + '/' + attrProxy.name()] = threadtuple(index, thr)
         log.debug(f'Thread (index: {index}) created and started TID: {thr.native_id}')
 
     def _attribute_worker(self, index=None, attrProxy=None, devProxy=None, queue=None):
@@ -86,6 +86,7 @@ class Poller():
                 continue
             mess = {}
             mess['index'] = index
+            mess['ID'] = 'attr:{attrProxy.get_device_proxy().name()}/{attrProxy.name()}'
             try:
                 # mess['value'] = attrProxy.read()  # this would be nice, but can not be pickled: RuntimeError
                 mess['value'] = attrProxy.read().value
@@ -116,8 +117,8 @@ class Poller():
         self.threads.append(thr)
         # this would currently overwrite if there are twice the same property added
         if False:
-            self.threads_dct[db.get_db_host() + ':' + prop['property'][0] + '/' +
-                             prop['property'][1]] = threadtuple(index, thr)
+            self._threads_dct[db.get_db_host() + ':' + prop['property'][0] + '/' +
+                              prop['property'][1]] = threadtuple(index, thr)
         log.debug(f'Thread (index: {index}) created and started TID: {thr.native_id}')
 
     def _property_worker(self, index=None, db=None, prop=None, queue=None):
@@ -131,6 +132,7 @@ class Poller():
                 continue
             mess = {}
             mess['index'] = index
+            mess['ID'] = f'prop:{db}/{prop[0]}/{prop[1]}'
             try:
                 mess['value'] = db.get_property(prop[0], prop[1])[prop[1]][0]
                 queue.put(mess)
@@ -161,3 +163,7 @@ class Poller():
         log.debug('Poller threads stopped')
         for thr in self.threads:
             thr.join()
+
+    @property
+    def threads_dct(self):
+        return self._threads_dct

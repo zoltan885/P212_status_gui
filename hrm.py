@@ -168,7 +168,7 @@ class MainWindow(QMainWindow):
         '''
         if message is None:
             return
-        # logging.debug(f'_updQueue: message {message}')
+        logging.debug(f'_updQueue: message {message}')
         index = message['index']
         if index == -1:
             return
