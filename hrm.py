@@ -21,10 +21,15 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QVBoxLayout,
     QWidget,
+    QSplitter,
+    QScrollArea,
+    QGroupBox,
 )
 
 from PyQt5.QtCore import QRunnable, Qt, QThreadPool, pyqtSignal, QThread, QObject, pyqtSlot, QTimer
 from PyQt5 import QtWidgets, uic
+
+from detachable_tabs import DetachableTabWidget
 
 import sys
 import os
@@ -65,39 +70,96 @@ SLOWTIMER = 0.5
 PROGRESS = '-|'
 
 
-class MainWidget(QtWidgets.QWidget):
+class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
-        super(MainWidget, self).__init__(*args, **kwargs)
-        uic.loadUi('hrm2.ui', self)
+        super().__init__()
+        # super.__init__(*args, **kwargs)
+        self.init_UI()
+
+    def init_UI(self):
+        # uic.loadUi('hrm2.ui', self)
+        self.centralWidget = DetachableTabWidget()
+        self.centralWidget.setTabBarAutoHide(True)
+        self.centralWidget.setMovable(True)
+        tabBar = self.centralWidget.tabBar
+
+        self.mainLayout = QHBoxLayout()
+
         self.t0 = time.time()
         self.pollers = []
         self.widgets = []
-        grid = QVBoxLayout()
-        grid2 = QVBoxLayout()
+        self.scrolls = []
+        self.widget_within_scrolls = {}
 
         self.poller = Poller()
         self.pollers.append(self.poller)
 
-        for p in conf.visible:
-            for k, v in getattr(conf, p).items():
-                if 'attr' in v.keys():
-                    attr_type = 'position' if v['attr'] == 'position' else 'counter'
-                    v.setdefault('format', _defaults['attr']['format'])
-                    v.setdefault('widgetStyle', _defaults['attr']['widgetStyle'])
-                    w = AttributeRow(k, 0.0000, 'ON', attrType=attr_type,
-                                     formatString=v['format'], widgetStyle=v['widgetStyle'])
-                    self.widgets.append(w)
-                    grid2.addWidget(w)
-                    self.poller.add_attr(v['dev'], v['attr'], state=True)
-                elif 'property' in v.keys():
-                    w = PropertyRow(k, 'undef')
-                    self.widgets.append(w)
-                    grid2.addWidget(w)
-                    v.setdefault('host', _defaults['prop']['host'])
-                    self.poller.add_property(v, host=v['host'], port=10000)
+        for tab in conf.grouping['tabs']:
+            tabWidget = QSplitter(Qt.Horizontal)
+            tabLayout = QHBoxLayout()
 
-        self.frame.setLayout(grid)
-        self.frame_2.setLayout(grid2)
+            for gr in conf.grouping['tabs'][tab].keys():
+                scr = QScrollArea()
+                widg = QWidget()
+                scroll_layout = QVBoxLayout()
+                # checking is missing here (typos can exists in the config file)
+                for coll in conf.grouping['tabs'][tab][gr]:
+                    group = QGroupBox(coll)
+                    group_layout = QVBoxLayout()
+                    for k, v in getattr(conf, coll).items():
+                        if 'attr' in v.keys():
+                            attr_type = 'position' if v['attr'] == 'position' else 'counter'
+                            v.setdefault('format', _defaults['attr']['format'])
+                            v.setdefault('widgetStyle', _defaults['attr']['widgetStyle'])
+                            widget = AttributeRow(k, 0.0000, 'ON', attrType=attr_type,
+                                                  formatString=v['format'], widgetStyle=v['widgetStyle'])
+                            group_layout.addWidget(widget)
+                            self.widget_within_scrolls[k] = widget  # more elaborate key is needed, to avoid collision
+                            self.widgets.append(widget)
+                            self.poller.add_attr(v['dev'], v['attr'], state=True)
+                        elif 'property' in v.keys():
+                            widget = PropertyRow(k, 'undef')
+                            self.widget_within_scrolls[k] = widget
+                            self.widgets.append(widget)
+                            group_layout.addWidget(widget)
+                            v.setdefault('host', _defaults['prop']['host'])
+                            self.poller.add_property(v, host=v['host'], port=10000)
+                    # add the group box .....
+                    group.setLayout(group_layout)
+                    scroll_layout.addWidget(group)
+                widg.setLayout(scroll_layout)
+                scr.setWidget(widg)
+                tabLayout.addWidget(scr)
+
+            tabWidget.setLayout(tabLayout)
+            self.centralWidget.addTab(tabWidget, tab)
+            # tabBar.setTabTextColor(tab, COLORS[tab])
+
+        self.setCentralWidget(self.centralWidget)
+        self.centralWidget.setLayout(self.mainLayout)
+        self.statusBar().showMessage("this is status bar")
+        self.show()
+
+        # for p in conf.visible:
+        #     for k, v in getattr(conf, p).items():
+        #         if 'attr' in v.keys():
+        #             attr_type = 'position' if v['attr'] == 'position' else 'counter'
+        #             v.setdefault('format', _defaults['attr']['format'])
+        #             v.setdefault('widgetStyle', _defaults['attr']['widgetStyle'])
+        #             w = AttributeRow(k, 0.0000, 'ON', attrType=attr_type,
+        #                              formatString=v['format'], widgetStyle=v['widgetStyle'])
+        #             self.widgets.append(w)
+        #             grid2.addWidget(w)
+        #             self.poller.add_attr(v['dev'], v['attr'], state=True)
+        #         elif 'property' in v.keys():
+        #             w = PropertyRow(k, 'undef')
+        #             self.widgets.append(w)
+        #             grid2.addWidget(w)
+        #             v.setdefault('host', _defaults['prop']['host'])
+        #             self.poller.add_property(v, host=v['host'], port=10000)
+
+        # self.frame.setLayout(grid)
+        # self.frame_2.setLayout(grid2)
 
         self.timerFast = QTimer()
         self.timerFast.start(int(1000*FASTTIMER))
@@ -129,9 +191,9 @@ class MainWidget(QtWidgets.QWidget):
     def watchdog(self):
         dt = time.time() - self.t0
         if int(2*dt) % 2 == 0:
-            self.label.setText('-')
+            self.statusBar().showMessage("-")
         else:
-            self.label.setText('|')
+            self.statusBar().showMessage("|")
 
 
 def exitHandler(pollers):
@@ -142,7 +204,7 @@ def exitHandler(pollers):
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
-    main = MainWidget()
+    main = MainWindow()
 
     pollers = main.pollers
     # atexit.register(exitHandler, pollers)  # this would be good, but it only handles terminal exits, and not the gui

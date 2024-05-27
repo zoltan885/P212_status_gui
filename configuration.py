@@ -10,7 +10,7 @@ visible = ['frontend', 'undulator', 'mots', 'ctrs', 'props']
 
 grouping = {
     'tabs': {
-        'tab1': {
+        'frontend': {
             'group1': ['frontend',
                        'undulator'
                        ],
@@ -18,8 +18,8 @@ grouping = {
                        'ctrs',
                        'props']
         },
-        'tab2': {'group': ['props']
-                 }
+        'Optical Hutch': {'group': ['props']
+                          }
     },
 }
 
