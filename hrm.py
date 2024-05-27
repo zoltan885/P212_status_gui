@@ -24,6 +24,9 @@ from PyQt5.QtWidgets import (
     QSplitter,
     QScrollArea,
     QGroupBox,
+    QToolBar,
+    QMenu,
+    QAction,
 )
 
 from PyQt5.QtCore import QRunnable, Qt, QThreadPool, pyqtSignal, QThread, QObject, pyqtSlot, QTimer
@@ -80,9 +83,13 @@ class MainWindow(QMainWindow):
     def init_UI(self):
         # uic.loadUi('hrm2.ui', self)
         self.centralWidget = DetachableTabWidget()
+        self.centralWidget.currentChanged.connect(self.tabChanged)
         self.centralWidget.setTabBarAutoHide(True)
         self.centralWidget.setMovable(True)
         tabBar = self.centralWidget.tabBar
+
+        menubar = self.menuBar()
+        menu = menubar.addMenu('Menu')
 
         self.mainLayout = QHBoxLayout()
 
@@ -177,10 +184,13 @@ class MainWindow(QMainWindow):
 
     def watchdog(self):
         dt = time.time() - self.t0
-        if int(2*dt) % 2 == 0:
+        if int(dt) % 2 == 0:
             self.statusBar().showMessage("-")
         else:
             self.statusBar().showMessage("|")
+
+    def tabChanged(self):
+        logging.info(self.centralWidget.currentIndex())
 
 
 def exitHandler(pollers):

@@ -47,7 +47,9 @@ class Poller():
         self.startEvent.set()
 
     def add_attr(self, dev, attr, state=False, logged=False):
-        # connect to the device...
+        # check if attr is already polled an return the already existing thread index
+        # if f'{dev}/{attr}' in self.threads_dct.keys():
+        #    return self.threads_dct[f'{dev}/{attr}'].index
         try:
             attrProxy = PT.AttributeProxy(dev + '/' + attr)
             log.info(f'Created attribute proxy: {dev}/{attr}')
