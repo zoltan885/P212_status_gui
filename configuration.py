@@ -6,32 +6,42 @@ Created on Thu May 23 10:21:49 2024
 @author: hegedues
 """
 
-visible = ['frontend', 'undulator', 'mots', 'ctrs', 'props']
-
 grouping = {
     'tabs': {
         'frontend': {
-            'group1': ['frontend',
-                       'undulator'
-                       ],
-            'group2': ['mots',
-                       'ctrs',
-                       'props']
+            'box1': ['petra'],
+            'box2': ['frontend_slits',
+                     'undulator'
+                     ],
         },
-        'Optical Hutch': {'group': ['props']
-                          }
+        'Optical Hutch': {
+            'box1': ['mots',
+                     'ctrs',
+                     'props']
+        }
     },
 }
 
-frontend = {'ps1off': {'dev': 'hasepfe:10000/p21/motor/fe.34', 'attr': 'position', 'widgetStyle': 'full'},
-            'ps1gap': {'dev': 'hasepfe:10000/p21/motor/fe.33', 'attr': 'position', 'widgetStyle': 'frame'},
-            'ps2off': {'dev': 'hasepfe:10000/p21/motor/fe.36', 'attr': 'position', 'widgetStyle': 'number'},
-            'ps2gap': {'dev': 'hasepfe:10000/p21/motor/fe.35', 'attr': 'position', 'widgetStyle': 'background'},
-            'ps2in': {'dev': 'hasepfe:10000/p21/motor/fe.37', 'attr': 'position', 'widgetStyle': 'nostate'},
-            'ps2out': {'dev': 'hasepfe:10000/p21/motor/fe.38', 'attr': 'position'},
-            }
+petra = {'ring current': {'dev': 'hasep212oh:10000/PETRA/GLOBALS/keyword', 'attr': 'BeamCurrent', 'format': '.1f'},
+         'topup': {'dev': 'hasep212oh:10000/PETRA/GLOBALS/keyword', 'attr': 'TopUpStatus', 'format': 'd'},
+         'orbitRMSX': {'dev': 'hasep212oh:10000/PETRA/GLOBALS/keyword', 'attr': 'orbitRMSX', 'format': '.1f'},
+         'orbitRMSY': {'dev': 'hasep212oh:10000/PETRA/GLOBALS/keyword', 'attr': 'orbitRMSY', 'format': '.1f'},
+         'fastOrbit': {'dev': 'hasep212oh:10000/PETRA/GLOBALS/keyword', 'attr': 'FastOrbitFBStatusText', 'format': 's'},
+         }
 undulator = {'gap': {'dev': 'hasep212oh:10000/p21/plcundulator/oh.01', 'attr': 'CurrentGap', 'format': '.0f'},
              }
+vacuum_valves = {}
+
+lm_cams = {}
+
+frontend_slits = {'ps1off': {'dev': 'hasepfe:10000/p21/motor/fe.34', 'attr': 'position', 'widgetStyle': 'full'},
+                  'ps1gap': {'dev': 'hasepfe:10000/p21/motor/fe.33', 'attr': 'position', 'widgetStyle': 'frame'},
+                  'ps2off': {'dev': 'hasepfe:10000/p21/motor/fe.36', 'attr': 'position', 'widgetStyle': 'number'},
+                  'ps2gap': {'dev': 'hasepfe:10000/p21/motor/fe.35', 'attr': 'position', 'widgetStyle': 'background'},
+                  'ps2in': {'dev': 'hasepfe:10000/p21/motor/fe.37', 'attr': 'position', 'widgetStyle': 'nostate'},
+                  'ps2out': {'dev': 'hasepfe:10000/p21/motor/fe.38', 'attr': 'position'},
+                  }
+
 
 mots = {'hury': {'dev': 'hasep212oh:10000/p21/motor/oh_u3.04', 'attr': 'position', 'format': '.0f'},
         'hdry': {'dev': 'hasep212oh:10000/p21/motor/oh_u3.06', 'attr': 'position', 'format': '.0f'},

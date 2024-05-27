@@ -8,6 +8,7 @@ Created on Thu May 23 09:56:34 2024
 import numpy as np
 import time
 import os
+from collections import namedtuple
 
 from threading import Thread
 from multiprocessing import Event, Process, Pool  # , Queue
@@ -24,6 +25,7 @@ except ImportError as e:
 
 
 GRACE = 0.1
+threadtuple = namedtuple('thread', ['index', 'thread'])
 
 
 class Poller():
@@ -39,9 +41,12 @@ class Poller():
         self.stopEvent = Event()
         self.queue = Queue(20000)
         self.threads = []
+        self.threads_dct = {}
+        self.log = {}  # this is in preparation to some sort of logging even if only for moving average for smooth values
+        self.last_state = []  # this is to record the last state
         self.startEvent.set()
 
-    def add_attr(self, dev, attr, state=False):
+    def add_attr(self, dev, attr, state=False, logged=False):
         # connect to the device...
         try:
             attrProxy = PT.AttributeProxy(dev + '/' + attr)
@@ -58,15 +63,18 @@ class Poller():
                 log.error(f'Could not create device proxy: {dev}')
                 return
         index = len(self.threads) + 1
-        thr = Thread(target=self._worker, args=(), kwargs={'index': index,
-                                                           'attrProxy': attrProxy,
-                                                           'devProxy': devProxy,
-                                                           'queue': self.queue})
+        thr = Thread(target=self._attribute_worker, args=(), kwargs={'index': index,
+                                                                     'attrProxy': attrProxy,
+                                                                     'devProxy': devProxy,
+                                                                     'queue': self.queue})
         thr.start()
         self.threads.append(thr)
+        # this would currently overwrite if there are twice the same attribute added
+        if False:
+            self.threads_dct[attrProxy.get_device_proxy().name() + '/' + attrProxy.name()] = threadtuple(index, thr)
         log.debug(f'Thread (index: {index}) created and started TID: {thr.native_id}')
 
-    def _worker(self, index=None, attrProxy=None, devProxy=None, queue=None):
+    def _attribute_worker(self, index=None, attrProxy=None, devProxy=None, queue=None):
         log.debug(f'Worker thread ({index} -> ): started')
         self.startEvent.wait()
         log.debug(f'Worker thread ({index}): running')
@@ -87,7 +95,7 @@ class Poller():
             time.sleep(GRACE)
         log.debug(f'Worker thread ({index}) stopped')
 
-    def add_property(self, prop, host='hasep212oh', port=10000):
+    def add_property(self, prop: tuple, host: str = 'hasep212oh', port: int = 10000):
         '''
         prop is a tuple with free property and property name: e.g. ('FOILS', 'downstream_counter')
         '''
@@ -98,15 +106,19 @@ class Poller():
             log.error(f'Could not connected to database: {host}:{port}')
             return
         index = len(self.threads) + 1
-        thr = Thread(target=self._propertyWorker, args=(), kwargs={'index': index,
-                                                                   'db': db,
-                                                                   'prop': prop,
-                                                                   'queue': self.queue})
+        thr = Thread(target=self._property_worker, args=(), kwargs={'index': index,
+                                                                    'db': db,
+                                                                    'prop': prop,
+                                                                    'queue': self.queue})
         thr.start()
         self.threads.append(thr)
+        # this would currently overwrite if there are twice the same property added
+        if False:
+            self.threads_dct[db.get_db_host() + ':' + prop['property'][0] + '/' +
+                             prop['property'][1]] = threadtuple(index, thr)
         log.debug(f'Thread (index: {index}) created and started TID: {thr.native_id}')
 
-    def _propertyWorker(self, index=None, db=None, prop=None, queue=None):
+    def _property_worker(self, index=None, db=None, prop=None, queue=None):
         log.debug(f'Worker thread ({index} -> {prop}): started')
         prop = prop['property']
         self.startEvent.wait()
@@ -126,6 +138,9 @@ class Poller():
             mess['state'] = 'UNDEFINED'
             time.sleep(10*GRACE)
         log.debug(f'Worker thread ({index}) stopped')
+
+    def add_to_logging(self):
+        pass
 
     def start(self):
         self.startEvent.set()
