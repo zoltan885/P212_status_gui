@@ -162,7 +162,7 @@ class MainWindow(QMainWindow):
         self.timerSlow.start(int(1000*SLOWTIMER))
         self.timerSlow.timeout.connect(self.watchdog)
 
-        self.print(self.all_update_widgets)
+        logging.debug(self.all_update_widgets)
 
     def _updFromQueue(self, message):
         '''
