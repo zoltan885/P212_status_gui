@@ -11,6 +11,23 @@ import numpy as np
 ASIRT = 5.43102  # @ 22.5 C
 
 
+def _check_configuration(config_file):
+    pass
+
+
+def create_ID(configuration_dct):
+    '''
+    creates an ID from the configuration dictionary
+    '''
+    # attributes
+    if 'dev' in configuration_dct.keys():
+        ID = f"attr::{configuration_dct['dev']}/{configuration_dct['attr']}"
+        return ID
+    if 'property' in configuration_dct.keys():
+        ID = f"prop::{configuration_dct['host']}:{configuration_dct['property'][0]}/{configuration_dct['property'][1]}"
+        return ID
+
+
 def EToAngle(energy, unit='urad'):
     '''
     converts the energy [keV] to angle [urad or degree] (depending on the unit kw) (for Si 111 reflection)

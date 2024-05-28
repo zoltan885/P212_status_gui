@@ -46,10 +46,13 @@ class Poller():
         self.last_state = []  # this is to record the last state
         self.startEvent.set()
 
-    def add_attr(self, dev, attr, state=False, logged=False):
+    def add_attr(self, dev: str, attr: str, ID: str = None, state: bool = False, logged: bool = False):
         # check if attr is already polled an return the already existing thread index
         # if f'{dev}/{attr}' in self.threads_dct.keys():
         #    return self.threads_dct[f'{dev}/{attr}'].index
+        if ID in self._threads_dct.keys():
+            logging.info(f'Thread with ID {ID} already exists')
+            return
         try:
             attrProxy = PT.AttributeProxy(dev + '/' + attr)
             log.info(f'Created attribute proxy: {dev}/{attr}')
@@ -68,16 +71,15 @@ class Poller():
         thr = Thread(target=self._attribute_worker, args=(), kwargs={'index': index,
                                                                      'attrProxy': attrProxy,
                                                                      'devProxy': devProxy,
-                                                                     'queue': self.queue})
+                                                                     'queue': self.queue,
+                                                                     'ID': ID})
         thr.start()
         self.threads.append(thr)
-        # this would currently overwrite if there are twice the same attribute added
-        if False:
-            self._threads_dct[attrProxy.get_device_proxy().name() + '/' + attrProxy.name()] = threadtuple(index, thr)
-        log.debug(f'Thread (index: {index}) created and started TID: {thr.native_id}')
+        self._threads_dct[ID] = threadtuple(index, thr)
+        log.debug(f'Thread (index: {index}, ID: {ID}) created and started TID: {thr.native_id}')
 
-    def _attribute_worker(self, index=None, attrProxy=None, devProxy=None, queue=None):
-        log.debug(f'Worker thread ({index} -> ): started')
+    def _attribute_worker(self, index: int = None, ID: str = None, attrProxy=None, devProxy=None, queue=None):
+        log.debug(f'Worker thread ({index} -> {ID}): started')
         self.startEvent.wait()
         log.debug(f'Worker thread ({index}): running')
         while not self.stopEvent.is_set():
@@ -86,22 +88,26 @@ class Poller():
                 continue
             mess = {}
             mess['index'] = index
-            mess['ID'] = f'attr:{attrProxy.get_device_proxy().name()}/{attrProxy.name()}'
+            mess['ID'] = ID
             try:
                 # mess['value'] = attrProxy.read()  # this would be nice, but can not be pickled: RuntimeError
                 mess['value'] = attrProxy.read().value
                 mess['state'] = devProxy.state() if devProxy is not None else PT.DevState.UNKNOWN
-                queue.put(mess)
                 # log.debug(f'Message put in queue ({self.queue}): {mess}')
             except:
-                pass
+                mess['value'] = None
+                mess['state'] = PT.DevState.UNKNOWN
+            queue.put(mess)
             time.sleep(GRACE)
         log.debug(f'Worker thread ({index}) stopped')
 
-    def add_property(self, prop: tuple, host: str = 'hasep212oh', port: int = 10000):
+    def add_property(self, prop: tuple, host: str = 'hasep212oh', port: int = 10000, ID: str = None):
         '''
         prop is a tuple with free property and property name: e.g. ('FOILS', 'downstream_counter')
         '''
+        if ID in self._threads_dct.keys():
+            logging.info(f'Thread with ID {ID} already exists')
+            return
         try:
             db = PT.Database(host, port)
             log.info(f'Connected to database: {host}:{port}')
@@ -112,17 +118,16 @@ class Poller():
         thr = Thread(target=self._property_worker, args=(), kwargs={'index': index,
                                                                     'db': db,
                                                                     'prop': prop,
-                                                                    'queue': self.queue})
+                                                                    'queue': self.queue,
+                                                                    'ID': ID})
         thr.start()
         self.threads.append(thr)
-        # this would currently overwrite if there are twice the same property added
-        if False:
-            self._threads_dct[db.get_db_host() + ':' + prop['property'][0] + '/' +
-                              prop['property'][1]] = threadtuple(index, thr)
-        log.debug(f'Thread (index: {index}) created and started TID: {thr.native_id}')
 
-    def _property_worker(self, index=None, db=None, prop=None, queue=None):
-        log.debug(f'Worker thread ({index} -> {prop}): started')
+        self._threads_dct[ID] = threadtuple(index, thr)
+        log.debug(f'Thread (index: {index} ID: {ID}) created and started TID: {thr.native_id}')
+
+    def _property_worker(self, index: int = None, ID: str = None, db=None, prop=None, queue=None):
+        log.debug(f'Worker thread ({index} -> {ID}): started')
         prop = prop['property']
         self.startEvent.wait()
         log.debug(f'Worker thread ({index}): running')
@@ -132,7 +137,7 @@ class Poller():
                 continue
             mess = {}
             mess['index'] = index
-            mess['ID'] = f'prop:{db.get_db_host()}/{prop[0]}/{prop[1]}'
+            mess['ID'] = ID
             try:
                 mess['value'] = db.get_property(prop[0], prop[1])[prop[1]][0]
                 queue.put(mess)

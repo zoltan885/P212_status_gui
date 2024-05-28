@@ -12,6 +12,8 @@ from poller import Poller
 from gui_parts import AttributeRow, PropertyRow
 import configuration as conf
 from _settings import _defaults
+import utilities
+from collections import defaultdict
 # from configuration import mots, props, ctrs, frontend, undulator
 
 from PyQt5.QtWidgets import (
@@ -72,6 +74,7 @@ FASTTIMER = 0.1
 SLOWTIMER = 1
 
 PROGRESS = '-|'
+DEFAULT_FLOAT = None
 
 
 class MainWindow(QMainWindow):
@@ -79,6 +82,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         # super.__init__(*args, **kwargs)
         self.init_UI()
+        self.setWindowTitle('P21.2 status v. 0.1')
 
     def init_UI(self):
         # uic.loadUi('hrm2.ui', self)
@@ -97,7 +101,7 @@ class MainWindow(QMainWindow):
         self.pollers = []
         self.widgets = []
         self.scrolls = []
-        self.all_update_widgets = {}
+        self.all_update_widgets = defaultdict(list)
 
         self.poller = Poller()
         self.pollers.append(self.poller)
@@ -110,7 +114,7 @@ class MainWindow(QMainWindow):
                 scr = QScrollArea()
                 widg = QWidget()
                 scroll_layout = QVBoxLayout()
-                # checking is missing here (typos can exists in the config file)
+                # checking is missing here (typos may happen in the config file)
                 for coll in conf.grouping['tabs'][tab][gr]:
                     group = QGroupBox(coll)
                     group_layout = QVBoxLayout()
@@ -123,23 +127,24 @@ class MainWindow(QMainWindow):
                                                         }''')
                     for k, v in getattr(conf, coll).items():
                         if 'attr' in v.keys():
+                            ID = utilities.create_ID(v)
                             attr_type = 'position' if v['attr'] == 'position' else 'counter'
                             v.setdefault('format', _defaults['attr']['format'])
                             v.setdefault('widgetStyle', _defaults['attr']['widgetStyle'])
-                            widget = AttributeRow(k, 0.0000, 'ON', attrType=attr_type,
-                                                  formatString=v['format'], widgetStyle=v['widgetStyle'])
+                            widget = AttributeRow(k, DEFAULT_FLOAT, 'ON', attrType=attr_type,
+                                                  formatString=v['format'], widgetStyle=v['widgetStyle'], toolTip=ID)
                             group_layout.addWidget(widget)
                             self.widgets.append(widget)
-                            self.all_update_widgets[f"attr:{v['dev']}/{v['attr']}"] = widget
-                            self.poller.add_attr(v['dev'], v['attr'], state=True)
-
+                            self.all_update_widgets[ID].append(widget)
+                            self.poller.add_attr(v['dev'], v['attr'], state=True, ID=ID)
                         elif 'property' in v.keys():
-                            widget = PropertyRow(k, 'undef')
+                            ID = utilities.create_ID(v)
+                            widget = PropertyRow(k, 'undef', toolTip=ID)
                             group_layout.addWidget(widget)
                             v.setdefault('host', _defaults['prop']['host'])
                             self.widgets.append(widget)
-                            self.all_update_widgets[f"prop:{v['host']}/{v['property'][0]}/{v['property'][1]}"] = widget
-                            self.poller.add_property(v, host=v['host'], port=10000)
+                            self.all_update_widgets[ID].append(widget)
+                            self.poller.add_property(v, host=v['host'], port=10000, ID=ID)
                     group.setLayout(group_layout)
                     scroll_layout.addWidget(group)
                 widg.setLayout(scroll_layout)
@@ -157,26 +162,44 @@ class MainWindow(QMainWindow):
 
         self.timerFast = QTimer()
         self.timerFast.start(int(1000*FASTTIMER))
-        self.timerFast.timeout.connect(self.updateFromQueue)
+        # self.timerFast.timeout.connect(self.updateFromQueue)
+        self.timerFast.timeout.connect(self.new_update_from_queue)
         self.timerSlow = QTimer()
         self.timerSlow.start(int(1000*SLOWTIMER))
         self.timerSlow.timeout.connect(self.watchdog)
 
         logging.debug(self.all_update_widgets)
 
-    def _updFromQueue(self, message):
+    def new_update_from_queue(self):
+        qu = self.poller.queue
+        while not qu.empty():
+            message = qu.get()
+            self._upd_from_queue(message)
+        time.sleep(0.01)
+
+    def _upd_from_queue(self, message):
+        # logging.debug(message)
+        if message is None:
+            return
+        if message['index'] == -1:
+            return
+        ID = message['ID']
+        for widget in self.all_update_widgets[ID]:
+            widget.update(value=message['value'], state=str(message['state']))
+
+    def _updFromQueue(self, message):  # deprecated
         '''
         this gets a message from the Poller queue
         '''
         if message is None:
             return
-        logging.debug(f'_updQueue: message {message}')
+        # logging.debug(f'_updQueue: message {message}')
         index = message['index']
         if index == -1:
             return
         self.widgets[index-1].update(value=message['value'], state=str(message['state']))
 
-    def updateFromQueue(self):
+    def updateFromQueue(self):  # deprecated
         qu = self.poller.queue
         # logging.debug(f'updateFromQueue called {qu}')
         while not qu.empty():

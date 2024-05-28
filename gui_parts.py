@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 
 class AttributeRow(QtWidgets.QWidget):
-    def __init__(self, label: str, value: float, state: str, attrType='position', formatString='.4f', widgetStyle='number'):
+    def __init__(self, label: str, value: float, state: str, attrType='position', formatString='.4f', widgetStyle='number', toolTip=None):
         assert attrType in list(attrDescriptor.keys())
         self.attrType = attrType
         super(AttributeRow, self).__init__()
@@ -35,6 +35,8 @@ class AttributeRow(QtWidgets.QWidget):
         # value
         color = attrDescriptor[self.attrType]['color']
         self.value = QLabel(str(value))
+        if toolTip is not None:
+            self.value.setToolTip(toolTip)
         self.label.setMaximumHeight(40)
         self.value.setMinimumWidth(150)
         self.value.setStyleSheet('''QLabel {
@@ -64,42 +66,45 @@ class AttributeRow(QtWidgets.QWidget):
         self.setLayout(self.layout)
 
     def update(self, label=None, value=None, state=None, color=None):
+        # logging.debug(f'WIDGET UPDATE: {value}, {state}')
         if self.widgetStyle == 'nostate':
             state = None
         if label is not None:
             self.label.setText(label)
         if value is not None:
             self.value.setText(f'{value:{self.formatString}}')
-            if self.widgetStyle == 'frame' and state is not None:
-                color = attrDescriptor[self.attrType]['color']
-                self.value.setStyleSheet('''QLabel {
-                                                    color: %s;
-                                                    font-size: 30px;
-                                                    font-weight: 600;
-                                                    border-radius: 3px;
-                                                    border: 2px solid %s;
-                                                    }''' % (color, _TangoStateColors[state]))
-            elif self.widgetStyle == 'number' and state is not None:
-                self.value.setStyleSheet('''QLabel {
-                                                    color: %s;
-                                                    font-size: 30px;
-                                                    font-weight: 600;
-                                                    }''' % (_TangoStateColors[state]))
-            elif self.widgetStyle == 'background' and state is not None:
-                self.value.setStyleSheet('''QLabel {
-                                                    background-color: %s;
-                                                    color: black;
-                                                    font-size: 30px;
-                                                    font-weight: 600;
-                                                    border-radius: 3px;
-                                                    }''' % (_TangoStateColors[state]))
+        elif value is None:
+            self.value.setText('None')
+        if self.widgetStyle == 'frame' and state is not None:
+            color = attrDescriptor[self.attrType]['color']
+            self.value.setStyleSheet('''QLabel {
+                                                color: %s;
+                                                font-size: 30px;
+                                                font-weight: 600;
+                                                border-radius: 3px;
+                                                border: 2px solid %s;
+                                                }''' % (color, _TangoStateColors[state]))
+        elif self.widgetStyle == 'number' and state is not None:
+            self.value.setStyleSheet('''QLabel {
+                                                color: %s;
+                                                font-size: 30px;
+                                                font-weight: 600;
+                                                }''' % (_TangoStateColors[state]))
+        elif self.widgetStyle == 'background' and state is not None:
+            self.value.setStyleSheet('''QLabel {
+                                                background-color: %s;
+                                                color: black;
+                                                font-size: 30px;
+                                                font-weight: 600;
+                                                border-radius: 3px;
+                                                }''' % (_TangoStateColors[state]))
         if state is not None:
             self.state.setStyleSheet('QLabel {background-color: %s; border-radius: 3px;}' % _TangoStateColors[state])
             self.state.setText(state)
 
 
 class PropertyRow(QtWidgets.QWidget):
-    def __init__(self, label: str, value: str, formatString=None):
+    def __init__(self, label: str, value: str, formatString=None, toolTip=None):
         super(PropertyRow, self).__init__()
         self.formatString = formatString
         self.layout = QHBoxLayout()
@@ -113,6 +118,8 @@ class PropertyRow(QtWidgets.QWidget):
         # value
         color = attrDescriptor['globalProp']['color']
         self.value = QLabel(value)
+        if toolTip is not None:
+            self.value.setToolTip(toolTip)
         self.value.setMinimumWidth(150)
         self.value.setStyleSheet('''QLabel {
                                             color: %s;
