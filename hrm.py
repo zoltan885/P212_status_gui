@@ -194,8 +194,8 @@ class MainWindow(QMainWindow):
             return
         ID = message['ID']
         for widget in self.all_update_widgets[ID]:
-            widget.update(value=message['value'], state=str(message['state']))
-            # widget.update(message)
+            #widget.update(value=message['value'], state=str(message['state']))
+            widget.update(message)
 
     def _updFromQueue(self, message):  # deprecated
         '''

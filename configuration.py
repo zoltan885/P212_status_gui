@@ -11,7 +11,8 @@ grouping = {
         'frontend': {
             'scroll1': ['PETRA', 'misc'],
             'scroll2': ['Frontend_slits',
-                        'Undulator'
+                        'Undulator',
+                        'Styles'
                         ],
         },
         'Optical Hutch': {
@@ -47,7 +48,14 @@ lm_cams = {}
 
 Laue_mono = {}
 
-Frontend_slits = {'ps1off': {'dev': 'hasepfe:10000/p21/motor/fe.34', 'attr': 'position', 'widgetStyle': 'full'},
+Frontend_slits = {'ps1off': {'dev': 'hasepfe:10000/p21/motor/fe.34', 'attr': 'position'},
+                  'ps1gap': {'dev': 'hasepfe:10000/p21/motor/fe.33', 'attr': 'position'},
+                  'ps2off': {'dev': 'hasepfe:10000/p21/motor/fe.36', 'attr': 'position'},
+                  'ps2gap': {'dev': 'hasepfe:10000/p21/motor/fe.35', 'attr': 'position'},
+                  'ps2in': {'dev': 'hasepfe:10000/p21/motor/fe.37', 'attr': 'position'},
+                  'ps2out': {'dev': 'hasepfe:10000/p21/motor/fe.38', 'attr': 'position'},
+                  }
+Styles = {'ps1off': {'dev': 'hasepfe:10000/p21/motor/fe.34', 'attr': 'position', 'widgetStyle': 'full'},
                   'ps1gap': {'dev': 'hasepfe:10000/p21/motor/fe.33', 'attr': 'position', 'widgetStyle': 'frame'},
                   'ps2off': {'dev': 'hasepfe:10000/p21/motor/fe.36', 'attr': 'position', 'widgetStyle': 'number'},
                   'ps2gap': {'dev': 'hasepfe:10000/p21/motor/fe.35', 'attr': 'position', 'widgetStyle': 'background'},
