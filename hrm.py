@@ -8,14 +8,17 @@ hrm test file
 @author: hegedues
 """
 
-from poller import Poller
-from gui_parts import AttributeRow, PropertyRow
-import configuration as conf
-from _settings import _defaults
-import utilities
-from collections import defaultdict
-# from configuration import mots, props, ctrs, frontend, undulator
-
+import uuid
+import logging
+import atexit
+import numpy as np
+import datetime
+import time
+import os
+import sys
+from detachable_tabs import DetachableTabWidget
+from PyQt5 import QtWidgets, uic
+from PyQt5.QtCore import QRunnable, Qt, QThreadPool, pyqtSignal, QThread, QObject, pyqtSlot, QTimer
 from PyQt5.QtWidgets import (
     QMainWindow,
     QLabel,
@@ -30,20 +33,14 @@ from PyQt5.QtWidgets import (
     QMenu,
     QAction,
 )
+from collections import defaultdict
+import utilities
+from _settings import _defaults
+import configuration as conf
+from gui_parts import AttributeRow, PropertyRow
+from poller import Poller
+VERSION = {'major': 1, 'minor': 0, 'patch': 0}
 
-from PyQt5.QtCore import QRunnable, Qt, QThreadPool, pyqtSignal, QThread, QObject, pyqtSlot, QTimer
-from PyQt5 import QtWidgets, uic
-
-from detachable_tabs import DetachableTabWidget
-
-import sys
-import os
-import time
-import datetime
-import numpy as np
-import atexit
-import logging
-import uuid
 logFormatter = logging.Formatter(
     "%(asctime)-25.25s %(threadName)-12.12s %(name)-25.24s %(levelname)-10.10s %(message)s")
 rootLogger = logging.getLogger()
@@ -82,7 +79,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         # super.__init__(*args, **kwargs)
         self.init_UI()
-        self.setWindowTitle('P21.2 status v. 0.1')
+        self.setWindowTitle(f'P21.2 status v. {".".join([str(_) for _ in VERSION.values()])}')
 
     def init_UI(self):
         # uic.loadUi('hrm2.ui', self)
@@ -194,7 +191,7 @@ class MainWindow(QMainWindow):
             return
         ID = message['ID']
         for widget in self.all_update_widgets[ID]:
-            #widget.update(value=message['value'], state=str(message['state']))
+            # widget.update(value=message['value'], state=str(message['state']))
             widget.update(message)
 
     def _updFromQueue(self, message):  # deprecated
