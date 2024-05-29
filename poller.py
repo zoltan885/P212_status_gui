@@ -5,6 +5,7 @@ Created on Thu May 23 09:56:34 2024
 
 @author: hegedues
 """
+import conditions
 import numpy as np
 import time
 import os
@@ -55,10 +56,12 @@ class Poller():
 
         self.start()
 
-    def add_attr(self, dev: str, attr: str, ID: str = None, state: bool = False, logged: bool = False):
+    def add_attr(self, attrdct: dict, ID: str = None, state: bool = False, logged: bool = False):
         # check if attr is already polled an return the already existing thread index
         # if f'{dev}/{attr}' in self.threads_dct.keys():
         #    return self.threads_dct[f'{dev}/{attr}'].index
+        dev = attrdct['dev']
+        attr = attrdct['attr']
         if ID in self._threads_dct.keys():
             logging.info(f'Thread with ID {ID} already exists')
             return

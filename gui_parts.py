@@ -65,8 +65,17 @@ class AttributeRow(QtWidgets.QWidget):
             self.layout.addWidget(self.state, 2)
         self.setLayout(self.layout)
 
-    def update(self, label=None, value=None, state=None, color=None):
+    def update(self, message):
         # logging.debug(f'WIDGET UPDATE: {value}, {state}')
+        message.setdefault('label', None)
+        label = message['label']
+        message.setdefault('value', None)
+        value = message['value']
+        message.setdefault('state', None)
+        state = message['state']
+        message.setdefault('color', None)
+        color = message['color']
+
         if self.widgetStyle == 'nostate':
             state = None
         if label is not None:

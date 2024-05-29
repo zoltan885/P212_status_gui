@@ -21,7 +21,7 @@ grouping = {
         },
         'Experimental Hutch': {
             'scroll1': ['diffractometer',
-                        'Server',
+                        # 'Server',
                         ]
         },
     },
@@ -30,7 +30,7 @@ grouping = {
 misc = {'RC': {'dev': 'hasep212oh:10000/PETRA/GLOBALS/keyword', 'attr': 'BeamCurrent', 'format': '.1f'},
         }
 
-PETRA = {'ring current': {'dev': 'hasep212oh:10000/PETRA/GLOBALS/keyword', 'attr': 'BeamCurrent', 'format': '.1f'},
+PETRA = {'ring current': {'dev': 'hasep212oh:10000/PETRA/GLOBALS/keyword', 'attr': 'BeamCurrent', 'format': '.1f', 'condition': 'ring_condition'},
          'N_bunches': {'dev': 'hasep212oh:10000/PETRA/GLOBALS/keyword', 'attr': 'NumberOfBunches', 'format': 'd'},
          'Lifetime': {'dev': 'hasep212oh:10000/PETRA/GLOBALS/keyword', 'attr': 'BeamLifetime', 'format': '.1f'},
          'Ring energy': {'dev': 'hasep212oh:10000/PETRA/GLOBALS/keyword', 'attr': 'Energy', 'format': '.2f'},

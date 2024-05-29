@@ -136,7 +136,7 @@ class MainWindow(QMainWindow):
                             group_layout.addWidget(widget)
                             self.widgets.append(widget)
                             self.all_update_widgets[ID].append(widget)
-                            self.poller.add_attr(v['dev'], v['attr'], state=True, ID=ID)
+                            self.poller.add_attr(v, state=True, ID=ID)
                         elif 'property' in v.keys():
                             ID = utilities.create_ID(v)
                             widget = PropertyRow(k, 'undef', toolTip=ID)
@@ -144,6 +144,7 @@ class MainWindow(QMainWindow):
                             v.setdefault('host', _defaults['prop']['host'])
                             self.widgets.append(widget)
                             self.all_update_widgets[ID].append(widget)
+                            v.setdefault('host', _defaults['prop']['host'])
                             self.poller.add_property(v, host=v['host'], port=10000, ID=ID)
                         elif 'server' in v.keys():
                             ID = utilities.create_ID(v)
@@ -194,6 +195,7 @@ class MainWindow(QMainWindow):
         ID = message['ID']
         for widget in self.all_update_widgets[ID]:
             widget.update(value=message['value'], state=str(message['state']))
+            # widget.update(message)
 
     def _updFromQueue(self, message):  # deprecated
         '''
