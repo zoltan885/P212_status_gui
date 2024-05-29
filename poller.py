@@ -13,6 +13,7 @@ from collections import namedtuple
 from threading import Thread
 from multiprocessing import Event, Process, Pool  # , Queue
 from queue import Queue
+import subprocess
 import logging
 log = logging.getLogger(__name__)
 
@@ -26,6 +27,12 @@ except ImportError as e:
 
 GRACE = 0.1
 threadtuple = namedtuple('thread', ['index', 'thread'])
+
+
+# run an external process and catch the output
+# https://stackoverflow.com/questions/4760215/running-shell-command-and-capturing-the-output
+# via ssh
+# https://stackoverflow.com/questions/3586106/perform-commands-over-ssh-with-python
 
 
 class Poller():
@@ -44,7 +51,9 @@ class Poller():
         self._threads_dct = {}
         self.log = {}  # this is in preparation to some sort of logging even if only for moving average for smooth values
         self.last_state = []  # this is to record the last state
-        self.startEvent.set()
+        self._grace = GRACE  # this could then be set externally
+
+        self.start()
 
     def add_attr(self, dev: str, attr: str, ID: str = None, state: bool = False, logged: bool = False):
         # check if attr is already polled an return the already existing thread index
@@ -98,8 +107,8 @@ class Poller():
                 mess['value'] = None
                 mess['state'] = PT.DevState.UNKNOWN
             queue.put(mess)
-            time.sleep(GRACE)
-        log.debug(f'Worker thread ({index}) stopped')
+            time.sleep(self._grace)
+        log.debug(f'Worker thread ({index} {ID}) stopped')
 
     def add_property(self, prop: tuple, host: str = 'hasep212oh', port: int = 10000, ID: str = None):
         '''
@@ -138,15 +147,56 @@ class Poller():
             mess = {}
             mess['index'] = index
             mess['ID'] = ID
+            mess['state'] = 'UNDEFINED'
             try:
                 mess['value'] = db.get_property(prop[0], prop[1])[prop[1]][0]
-                queue.put(mess)
                 # log.debug(f'Message put in queue ({self.queue}): {mess}')
             except Exception as e:
                 log.error(e)
+            queue.put(mess)
+            time.sleep(10*self._grace)
+        log.debug(f'Worker thread ({index} {ID}) stopped')
+
+    def add_server(self, server: str, ID: str):
+        if ID in self._threads_dct.keys():
+            logging.info(f'Thread with ID {ID} already exists')
+            return
+        index = len(list(self._threads_dct.keys())) + 1
+        thr = Thread(target=self._server_worker, args=(), kwargs={'server': server,
+                                                                  'index': index,
+                                                                  'ID': ID,
+                                                                  'queue': self.queue,
+                                                                  })
+        thr.start()
+        self.threads.append(thr)
+        self._threads_dct[ID] = threadtuple(index, thr)
+        log.debug(f'Thread (index: {index} ID: {ID}) created and started TID: {thr.native_id}')
+
+    def _server_worker(self, server: str, index: int, ID: str, queue: Queue):
+        log.debug(f'Worker thread ({index} -> {ID}): started')
+        self.startEvent.wait()
+        log.debug(f'Worker thread ({index}): running')
+        while not self.stopEvent.is_set():
+            if self.pauseEvent.is_set():
+                time.sleep(0.5)
+                continue
+            mess = {}
+            mess['index'] = index
+            mess['ID'] = ID
             mess['state'] = 'UNDEFINED'
-            time.sleep(10*GRACE)
-        log.debug(f'Worker thread ({index}) stopped')
+            try:
+                ans = subprocess.run(['TngUtility3.py', '--list', server], capture_output=True, text=True).stdout
+                status = ans.strip().rpartition('\n')[2].strip().split()[1]
+                mess['value'] = status
+            except:
+                mess['value'] = 'unknown'
+            queue.put(mess)
+            # this is for the thread to quickly terminate
+            t = time.time()
+            while not self.stopEvent.is_set() and time.time()-t < 100*self._grace:
+                time.sleep(self._grace)
+
+        log.debug(f'Worker thread ({index} {ID}) stopped')
 
     def add_to_logging(self):
         pass

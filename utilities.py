@@ -26,6 +26,9 @@ def create_ID(configuration_dct):
     if 'property' in configuration_dct.keys():
         ID = f"prop::{configuration_dct['host']}:{configuration_dct['property'][0]}/{configuration_dct['property'][1]}"
         return ID
+    if 'server' in configuration_dct.keys():
+        ID = f"serv::{configuration_dct['server']}"
+        return ID
 
 
 def EToAngle(energy, unit='urad'):

@@ -145,6 +145,14 @@ class MainWindow(QMainWindow):
                             self.widgets.append(widget)
                             self.all_update_widgets[ID].append(widget)
                             self.poller.add_property(v, host=v['host'], port=10000, ID=ID)
+                        elif 'server' in v.keys():
+                            ID = utilities.create_ID(v)
+                            widget = PropertyRow(k, 'undef', toolTip=ID)
+                            group_layout.addWidget(widget)
+                            self.widgets.append(widget)
+                            self.all_update_widgets[ID].append(widget)
+                            self.poller.add_server(v, ID=ID)
+
                     group.setLayout(group_layout)
                     scroll_layout.addWidget(group)
                 widg.setLayout(scroll_layout)

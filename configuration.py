@@ -21,6 +21,7 @@ grouping = {
         },
         'Experimental Hutch': {
             'scroll1': ['diffractometer',
+                        'Server',
                         ]
         },
     },
@@ -84,3 +85,6 @@ diffractometer = {'idtz2': {'dev': 'hasep21eh3:10000/p21/motor/eh3_u1.06', 'attr
                   'idry1': {'dev': 'hasep21eh3:10000/p21/motor/eh3_u1.13', 'attr': 'position'},
                   }
 symmetrie = {}
+
+Server = {'Keithley': {'server': 'Keithley2602b/eh3_1'},
+          }
