@@ -48,7 +48,6 @@ class Poller():
         self.pauseEvent = Event()
         self.stopEvent = Event()
         self.queue = Queue(20000)
-        self.threads = []
         self._threads_dct = {}
         self.log = {}  # this is in preparation to some sort of logging even if only for moving average for smooth values
         self.last_state = []  # this is to record the last state
@@ -57,9 +56,6 @@ class Poller():
         self.start()
 
     def add_attr(self, attrdct: dict, ID: str = None, state: bool = False, logged: bool = False):
-        # check if attr is already polled an return the already existing thread index
-        # if f'{dev}/{attr}' in self.threads_dct.keys():
-        #    return self.threads_dct[f'{dev}/{attr}'].index
         dev = attrdct['dev']
         attr = attrdct['attr']
         if ID in self._threads_dct.keys():
@@ -79,14 +75,13 @@ class Poller():
             except:
                 log.error(f'Could not create device proxy: {dev}')
                 return
-        index = len(self.threads) + 1
+        index = len(list(self._threads_dct.keys())) + 1
         thr = Thread(target=self._attribute_worker, args=(), kwargs={'index': index,
                                                                      'attrProxy': attrProxy,
                                                                      'devProxy': devProxy,
                                                                      'queue': self.queue,
                                                                      'ID': ID})
         thr.start()
-        self.threads.append(thr)
         self._threads_dct[ID] = threadtuple(index, thr)
         log.debug(f'Thread (index: {index}, ID: {ID}) created and started TID: {thr.native_id}')
 
@@ -126,14 +121,13 @@ class Poller():
         except:
             log.error(f'Could not connected to database: {host}:{port}')
             return
-        index = len(self.threads) + 1
+        index = len(list(self._threads_dct.keys())) + 1
         thr = Thread(target=self._property_worker, args=(), kwargs={'index': index,
                                                                     'db': db,
                                                                     'prop': prop,
                                                                     'queue': self.queue,
                                                                     'ID': ID})
         thr.start()
-        self.threads.append(thr)
 
         self._threads_dct[ID] = threadtuple(index, thr)
         log.debug(f'Thread (index: {index} ID: {ID}) created and started TID: {thr.native_id}')
@@ -171,7 +165,7 @@ class Poller():
                                                                   'queue': self.queue,
                                                                   })
         thr.start()
-        self.threads.append(thr)
+
         self._threads_dct[ID] = threadtuple(index, thr)
         log.debug(f'Thread (index: {index} ID: {ID}) created and started TID: {thr.native_id}')
 
@@ -221,8 +215,8 @@ class Poller():
     def stop(self):
         self.stopEvent.set()
         log.debug('Poller threads stopped')
-        for thr in self.threads:
-            thr.join()
+        for thr in self._threads_dct.values():
+            thr.thread.join()
 
     @property
     def threads_dct(self):
