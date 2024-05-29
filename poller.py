@@ -186,11 +186,13 @@ class Poller():
             mess['state'] = 'UNDEFINED'
             try:
                 ans = subprocess.run(['TngUtility3.py', '--list', server], capture_output=True, text=True).stdout
+                logging.debug(f'FROM TNGUTILITY: {ans}')
                 status = ans.strip().rpartition('\n')[2].strip().split()[1]
                 mess['value'] = status
             except:
                 mess['value'] = 'unknown'
             queue.put(mess)
+            log.debug(f'Message put in queue ({self.queue}): {mess}')
             # this is for the thread to quickly terminate
             t = time.time()
             while not self.stopEvent.is_set() and time.time()-t < 100*self._grace:
