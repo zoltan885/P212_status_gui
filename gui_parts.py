@@ -26,6 +26,8 @@ class AttributeRow(QtWidgets.QWidget):
         self.layout = QHBoxLayout()
         # name label
         self.label = QLabel(label)
+        if toolTip is not None:
+            self.label.setToolTip(toolTip)
         self.label.setMaximumHeight(40)
         self.label.setMinimumWidth(150)
         self.label.setStyleSheet('''QLabel {
@@ -35,8 +37,6 @@ class AttributeRow(QtWidgets.QWidget):
         # value
         color = attrDescriptor[self.attrType]['color']
         self.value = QLabel(str(value))
-        if toolTip is not None:
-            self.value.setToolTip(toolTip)
         self.label.setMaximumHeight(40)
         self.value.setMinimumWidth(150)
         self.value.setStyleSheet('''QLabel {
@@ -65,7 +65,7 @@ class AttributeRow(QtWidgets.QWidget):
             self.layout.addWidget(self.state, 2)
         self.setLayout(self.layout)
 
-    def update(self, message:dict):
+    def update(self, message: dict):
         # logging.debug(f'WIDGET UPDATE: {value}, {state}')
         message.setdefault('label', None)
         label = message['label']
@@ -139,7 +139,7 @@ class PropertyRow(QtWidgets.QWidget):
         self.layout.addWidget(self.value, 1)
         self.setLayout(self.layout)
 
-    def update(self, message:dict):
+    def update(self, message: dict):
         message.setdefault('label', None)
         label = message['label']
         message.setdefault('value', None)

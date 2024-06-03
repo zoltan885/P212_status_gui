@@ -9,7 +9,7 @@ import conditions
 import numpy as np
 import time
 import os
-from collections import namedtuple
+from collections import namedtuple, deque
 
 from threading import Thread
 from multiprocessing import Event, Process, Pool  # , Queue
@@ -27,6 +27,9 @@ except ImportError as e:
 
 
 GRACE = 0.1
+LOGTIME = 1
+DEQUEUE_MAX_SIZE = 2000
+logtuple = namedtuple('log', ['time', 'value'])
 threadtuple = namedtuple('thread', ['index', 'thread'])
 
 
@@ -55,9 +58,10 @@ class Poller():
 
         self.start()
 
-    def add_attr(self, attrdct: dict, ID: str = None, state: bool = False, logged: bool = False):
+    def add_attr(self, attrdct: dict, ID: str = None, state: bool = False):
         dev = attrdct['dev']
         attr = attrdct['attr']
+        logged = attrdct['logged']
         if ID in self._threads_dct.keys():
             logging.info(f'Thread with ID {ID} already exists')
             return
@@ -80,15 +84,20 @@ class Poller():
                                                                      'attrProxy': attrProxy,
                                                                      'devProxy': devProxy,
                                                                      'queue': self.queue,
-                                                                     'ID': ID})
+                                                                     'ID': ID,
+                                                                     'logged': logged})
         thr.start()
+        if logged:
+            logging.debug('Added logged attribute {attr}')
+            self.log[ID] = deque(maxlen=DEQUEUE_MAX_SIZE)
         self._threads_dct[ID] = threadtuple(index, thr)
         log.debug(f'Thread (index: {index}, ID: {ID}) created and started TID: {thr.native_id}')
 
-    def _attribute_worker(self, index: int = None, ID: str = None, attrProxy=None, devProxy=None, queue=None):
+    def _attribute_worker(self, index: int = None, ID: str = None, attrProxy=None, devProxy=None, queue=None, logged=False):
         log.debug(f'Worker thread ({index} -> {ID}): started')
         self.startEvent.wait()
         log.debug(f'Worker thread ({index}): running')
+        last_log = time.time()
         while not self.stopEvent.is_set():
             if self.pauseEvent.is_set():
                 time.sleep(0.5)
@@ -101,6 +110,10 @@ class Poller():
                 mess['value'] = attrProxy.read().value
                 mess['state'] = devProxy.state() if devProxy is not None else PT.DevState.UNKNOWN
                 # log.debug(f'Message put in queue ({self.queue}): {mess}')
+                if logged and time.time()-last_log > LOGTIME:
+                    self.log[ID].append(logtuple(time.time(), mess['value']))
+                    log.debug(f"{mess['value']} added to log: current log size: {len(self.log[ID])}")
+                    last_log = time.time()
             except:
                 mess['value'] = None
                 mess['state'] = PT.DevState.UNKNOWN

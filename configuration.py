@@ -31,7 +31,7 @@ grouping = {
 misc = {'RC': {'dev': 'hasep212oh:10000/PETRA/GLOBALS/keyword', 'attr': 'BeamCurrent', 'format': '.1f'},
         }
 
-PETRA = {'ring current': {'dev': 'hasep212oh:10000/PETRA/GLOBALS/keyword', 'attr': 'BeamCurrent', 'format': '.1f', 'condition': 'ring_condition'},
+PETRA = {'ring current': {'dev': 'hasep212oh:10000/PETRA/GLOBALS/keyword', 'attr': 'BeamCurrent', 'format': '.1f', 'condition': 'ring_condition', 'logged': True},
          'N_bunches': {'dev': 'hasep212oh:10000/PETRA/GLOBALS/keyword', 'attr': 'NumberOfBunches', 'format': 'd'},
          'Lifetime': {'dev': 'hasep212oh:10000/PETRA/GLOBALS/keyword', 'attr': 'BeamLifetime', 'format': '.1f'},
          'Ring energy': {'dev': 'hasep212oh:10000/PETRA/GLOBALS/keyword', 'attr': 'Energy', 'format': '.2f'},
@@ -56,12 +56,12 @@ Frontend_slits = {'ps1off': {'dev': 'hasepfe:10000/p21/motor/fe.34', 'attr': 'po
                   'ps2out': {'dev': 'hasepfe:10000/p21/motor/fe.38', 'attr': 'position'},
                   }
 Styles = {'ps1off': {'dev': 'hasepfe:10000/p21/motor/fe.34', 'attr': 'position', 'widgetStyle': 'full'},
-                  'ps1gap': {'dev': 'hasepfe:10000/p21/motor/fe.33', 'attr': 'position', 'widgetStyle': 'frame'},
-                  'ps2off': {'dev': 'hasepfe:10000/p21/motor/fe.36', 'attr': 'position', 'widgetStyle': 'number'},
-                  'ps2gap': {'dev': 'hasepfe:10000/p21/motor/fe.35', 'attr': 'position', 'widgetStyle': 'background'},
-                  'ps2in': {'dev': 'hasepfe:10000/p21/motor/fe.37', 'attr': 'position', 'widgetStyle': 'nostate'},
-                  'ps2out': {'dev': 'hasepfe:10000/p21/motor/fe.38', 'attr': 'position'},
-                  }
+          'ps1gap': {'dev': 'hasepfe:10000/p21/motor/fe.33', 'attr': 'position', 'widgetStyle': 'frame'},
+          'ps2off': {'dev': 'hasepfe:10000/p21/motor/fe.36', 'attr': 'position', 'widgetStyle': 'number'},
+          'ps2gap': {'dev': 'hasepfe:10000/p21/motor/fe.35', 'attr': 'position', 'widgetStyle': 'background'},
+          'ps2in': {'dev': 'hasepfe:10000/p21/motor/fe.37', 'attr': 'position', 'widgetStyle': 'nostate'},
+          'ps2out': {'dev': 'hasepfe:10000/p21/motor/fe.38', 'attr': 'position'},
+          }
 
 
 HRM = {'hury': {'dev': 'hasep212oh:10000/p21/motor/oh_u3.04', 'attr': 'position', 'format': '.0f'},

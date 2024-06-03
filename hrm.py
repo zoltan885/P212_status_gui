@@ -55,15 +55,6 @@ consoleHandler.setFormatter(logFormatter)
 rootLogger.addHandler(consoleHandler)
 
 
-# resources:
-# https://doc.qt.io/qt-5/stylesheet-examples.html
-# https://stackoverflow.com/questions/6784084/how-to-pass-arguments-to-functions-by-the-click-of-button-in-pyqt
-# https://stackoverflow.com/questions/15727420/using-logging-in-multiple-modules
-# Detachable tabs...
-# https://stackoverflow.com/questions/47267195/in-pyqt-is-it-possible-to-detach-tabs-from-a-qtabwidget
-# Quest DB
-# https://py-questdb-client.readthedocs.io/en/latest/
-
 _coolBlue = '#0d6efd'
 
 
@@ -128,6 +119,7 @@ class MainWindow(QMainWindow):
                             attr_type = 'position' if v['attr'] == 'position' else 'counter'
                             v.setdefault('format', _defaults['attr']['format'])
                             v.setdefault('widgetStyle', _defaults['attr']['widgetStyle'])
+                            v.setdefault('logged', False)
                             widget = AttributeRow(k, DEFAULT_FLOAT, 'ON', attrType=attr_type,
                                                   formatString=v['format'], widgetStyle=v['widgetStyle'], toolTip=ID)
                             group_layout.addWidget(widget)

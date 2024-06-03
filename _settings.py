@@ -6,6 +6,7 @@ Created on Thu May 23 10:10:15 2024
 @author: hegedues
 """
 
+
 blue = '#0d6efd'
 
 attrDescriptor = {'position': {'color': '#000000', 'border': '2px solid #0d6efd'},
