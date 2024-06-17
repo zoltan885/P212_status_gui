@@ -85,13 +85,13 @@ class MainWindow(QMainWindow):
         menubar = self.menuBar()
         deb_menu = menubar.addMenu('Debug')
 
-        start_kafka_action = QAction()
+        start_kafka_action = QAction("&Start KAFKA")
         start_kafka_action.triggered.connect(self._start_kafka)
-        deb_menu.addAction('Start kafka')
+        deb_menu.addAction(start_kafka_action)
 
-        stop_kafka_action = QAction()
+        stop_kafka_action = QAction("&Pause KAFKA")
         stop_kafka_action.triggered.connect(self._stop_kafka)
-        deb_menu.addAction('Stop kafka')
+        deb_menu.addAction(stop_kafka_action)
 
         self.mainLayout = QHBoxLayout()
 

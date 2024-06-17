@@ -79,6 +79,8 @@ class kafkaProducer():
             t0 = time.time()
             while time.time()-t0 < GRACE:
                 time.sleep(0.1)
+                if self.stopEvent.is_set():
+                    break
         log.debug('Kafka producer thread stopped')
 
     def pause(self):
