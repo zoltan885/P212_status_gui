@@ -16,6 +16,7 @@ attrDescriptor = {'position': {'color': '#000000', 'border': '2px solid #0d6efd'
 _TangoStateColors = {'ON': '#6beda5',  # '#42f545',
                      'OFF': '#f4f7f2',
                      'MOVING': '#427ef5',
+                     'RUNNING': '#427ef5',
                      'STANDBY': '#f5f253',
                      'FAULT': '#cc2b2b',
                      'INIT': '#daa06d',

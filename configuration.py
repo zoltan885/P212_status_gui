@@ -21,9 +21,14 @@ grouping = {
                         'props']
         },
         'Experimental Hutch': {
-            'scroll1': ['diffractometer',
+            'scroll1': ['EH3slits','diffractometer',],
+            'scroll2': [
+                        'Experiment',
                         # 'Server',
                         ]
+        },
+        'Misc.': {
+             'scroll1': ['Sweep_stuff','InDaBeam',],
         },
     },
 }
@@ -83,6 +88,12 @@ props = {'foil': {'property': ('FOILS', 'current_foil'), 'host': 'hasep212oh'},
          'absorber': {'property': ('GLOBAL', 'ABSORBER'), 'host': 'hasep212oh'},
          }
 
+EH3slits = {'top': {'dev': 'hasep21eh3:10000/p21/motor/eh3_u2.01', 'attr': 'position'},
+            'bottom': {'dev': 'hasep21eh3:10000/p21/motor/eh3_u2.02', 'attr': 'position'},
+            'in': {'dev': 'hasep21eh3:10000/p21/motor/eh3_u2.03', 'attr': 'position'},
+            'out': {'dev': 'hasep21eh3:10000/p21/motor/eh3_u2.04', 'attr': 'position'},
+            }
+
 diffractometer = {'idtz2': {'dev': 'hasep21eh3:10000/p21/motor/eh3_u1.06', 'attr': 'position'},
                   'idty2': {'dev': 'hasep21eh3:10000/p21/motor/eh3_u1.05', 'attr': 'position'},
                   'idtx2': {'dev': 'hasep21eh3:10000/p21/motor/eh3_u1.10', 'attr': 'position'},
@@ -92,7 +103,34 @@ diffractometer = {'idtz2': {'dev': 'hasep21eh3:10000/p21/motor/eh3_u1.06', 'attr
                   'idty1': {'dev': 'hasep21eh3:10000/p21/motor/eh3_u1.14', 'attr': 'position'},
                   'idry1': {'dev': 'hasep21eh3:10000/p21/motor/eh3_u1.13', 'attr': 'position'},
                   }
+
+Experiment_old = {'LKM_T': {'dev': 'hasep212lkam:10000/p212/linkamt96/01', 'attr': 'Temperature', 'format': '.1f', 'widgetStyle': 'frame'},
+              'LKM_target': {'dev': 'hasep212lkam:10000/p212/linkamt96/01', 'attr': 'TargetTemperature', 'format': '.1f', 'widgetStyle': 'frame'},
+              'LKM_rate': {'dev': 'hasep212lkam:10000/p212/linkamt96/01', 'attr': 'HeatingRate', 'format': '.1f', 'widgetStyle': 'frame'},
+              }
+
+Experiment = {'symtx': {'dev': 'hasep21eh3:10000/symetrie/hexapod/main', 'attr': 'Tx'},
+              'symty': {'dev': 'hasep21eh3:10000/symetrie/hexapod/main', 'attr': 'Ty'},
+              'symtz': {'dev': 'hasep21eh3:10000/symetrie/hexapod/main', 'attr': 'Tz'},
+              'temp': {'dev': 'hasep212lkam:10000/p212/linkamt96/01', 'attr': 'Temperature', 'format': '.1f'},
+              'D_linear': {'dev': 'hasep21eh3:10000/p21/ofttmotor/linear', 'attr': 'Position'},
+              'D_rot': {'dev': 'hasep21eh3:10000/p21/ofttmotor/bottom', 'attr': 'Position'},
+              'D_load': {'dev': 'hasep21eh3:10000/p21/ofttloadcell/tension', 'attr': 'Load', 'format': '.1f'},
+              'D_torsion': {'dev': 'hasep21eh3:10000/p21/ofttloadcell/torsion', 'attr': 'Load', 'format': '.1f'},
+             }
+
+
+
 symmetrie = {}
 
 Server = {'Keithley': {'server': 'Keithley2602b/eh3_1'},
           }
+
+Sweep_stuff = {'M_pilc': {'dev': 'hasep21eh3:10000/p21/pilcarraybasedtg2/eh3.01', 'attr': 'Arm', 'format': 'd'},
+               'S_pilc': {'dev': 'hasep21eh3:10000/p21/pilcarraybasedtg2slave/eh3.01', 'attr': 'Arm', 'format': 'd'}
+              }
+InDaBeam = {'OH xeye': {'property': ('EYES', 'oh2'), 'host': 'hasep212oh'},
+            'EH xeye': {'property': ('EYES', 'eh3'), 'host': 'hasep212oh'},
+}
+
+
