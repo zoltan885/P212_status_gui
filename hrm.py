@@ -38,6 +38,8 @@ from _settings import _defaults
 import configuration as conf
 from gui_parts import AttributeRow, PropertyRow
 from poller import Poller
+from kafka import kafkaProducer
+
 VERSION = {'major': 1, 'minor': 0, 'patch': 0}
 
 logFormatter = logging.Formatter(
@@ -80,7 +82,15 @@ class MainWindow(QMainWindow):
         tabBar = self.centralWidget.tabBar
 
         menubar = self.menuBar()
-        menu = menubar.addMenu('Menu')
+        deb_menu = menubar.addMenu('Debug')
+
+        start_kafka_action = QAction()
+        start_kafka_action.triggered.connect(self._start_kafka)
+        deb_menu.addAction('Start kafka')
+
+        stop_kafka_action = QAction()
+        stop_kafka_action.triggered.connect(self._stop_kafka)
+        deb_menu.addAction('Stop kafka')
 
         self.mainLayout = QHBoxLayout()
 
@@ -92,6 +102,8 @@ class MainWindow(QMainWindow):
 
         self.poller = Poller()
         self.pollers.append(self.poller)
+
+        self.kafka = kafkaProducer()
 
         for tab in conf.grouping['tabs']:
             tabWidget = QSplitter(Qt.Horizontal)
@@ -166,6 +178,12 @@ class MainWindow(QMainWindow):
         self.timerSlow.timeout.connect(self.watchdog)
 
         logging.debug(self.all_update_widgets)
+
+    def _start_kafka(self):
+        self.kafka.run = True
+
+    def _stop_kafka(self):
+        self.kafka.run = False
 
     def new_update_from_queue(self):
         qu = self.poller.queue
