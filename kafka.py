@@ -57,9 +57,9 @@ class kafkaProducer():
                        'client.id': socket.gethostname()
                        }
         self.producer = Producer(self.config)
-        self._run = False
 
         self.pauseEvent = Event()
+        self.pauseEvent.set()
         self.stopEvent = Event()
 
         self.thr = Thread(target=self._produce_worker, args=(), kwargs={'queue': self.queue, })
