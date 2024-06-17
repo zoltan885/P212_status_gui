@@ -31,7 +31,7 @@ LOGTIME = 1
 DEQUEUE_MAX_SIZE = 2000
 logtuple = namedtuple('log', ['time', 'value'])
 threadtuple = namedtuple('thread', ['index', 'thread'])
-
+statetuple = namedtuple('state', ['value', 'state'])
 
 # run an external process and catch the output
 # https://stackoverflow.com/questions/4760215/running-shell-command-and-capturing-the-output
@@ -53,6 +53,7 @@ class Poller():
         self.queue = Queue(20000)
         self._threads_dct = {}
         self.log = {}  # this is in preparation to some sort of logging even if only for moving average for smooth values
+        self.current_state = {}  # this is a slowly updating dict to hold the current state (meant for external appl)
         self.last_state = []  # this is to record the last state
         self._grace = GRACE  # this could then be set externally
 
@@ -90,6 +91,7 @@ class Poller():
         if logged:
             logging.debug('Added logged attribute {attr}')
             self.log[ID] = deque(maxlen=DEQUEUE_MAX_SIZE)
+        self.current_state[ID] = None
         self._threads_dct[ID] = threadtuple(index, thr)
         log.debug(f'Thread (index: {index}, ID: {ID}) created and started TID: {thr.native_id}')
 
@@ -114,6 +116,7 @@ class Poller():
                     self.log[ID].append(logtuple(time.time(), mess['value']))
                     log.debug(f"{mess['value']} added to log: current log size: {len(self.log[ID])}")
                     last_log = time.time()
+                self.current_state[ID] = statetuple(mess['value'], mess['state'])
             except:
                 mess['value'] = None
                 mess['state'] = PT.DevState.UNKNOWN
@@ -141,7 +144,7 @@ class Poller():
                                                                     'queue': self.queue,
                                                                     'ID': ID})
         thr.start()
-
+        self.current_state[ID] = None
         self._threads_dct[ID] = threadtuple(index, thr)
         log.debug(f'Thread (index: {index} ID: {ID}) created and started TID: {thr.native_id}')
 
@@ -161,6 +164,7 @@ class Poller():
             try:
                 mess['value'] = db.get_property(prop[0], prop[1])[prop[1]][0]
                 # log.debug(f'Message put in queue ({self.queue}): {mess}')
+                self.current_state[ID] = statetuple(mess['value'], mess['state'])
             except Exception as e:
                 log.error(e)
             queue.put(mess)

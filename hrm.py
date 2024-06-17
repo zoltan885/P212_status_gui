@@ -8,7 +8,6 @@ hrm test file
 @author: hegedues
 """
 
-import uuid
 import logging
 import atexit
 import numpy as np
@@ -207,6 +206,9 @@ class MainWindow(QMainWindow):
         time.sleep(0.01)
 
     def watchdog(self):
+        '''
+        simple text updater to show that the application is still responsive
+        '''
         dt = time.time() - self.t0
         if int(dt) % 2 == 0:
             self.statusBar().showMessage("-")
