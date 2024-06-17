@@ -69,11 +69,12 @@ class kafkaProducer():
         log.info('Kafka producer instantiated')
         while not self.stopEvent.is_set():
             if not self.pauseEvent.is_set():
-                try:
-                    serial_payload = json.dumps(queue.get())
-                    self.producer.produce(channel, key=key, value=serial_payload)
-                except:
-                    pass
+                if not queue.empty():
+                    try:
+                        serial_payload = json.dumps(queue.get())
+                        self.producer.produce(channel, key=key, value=serial_payload)
+                    except:
+                        pass
                 self.producer.flush()
             t0 = time.time()
             while time.time()-t0 < GRACE:

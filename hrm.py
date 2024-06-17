@@ -61,6 +61,7 @@ _coolBlue = '#0d6efd'
 
 FASTTIMER = 0.1
 SLOWTIMER = 1
+KAFKATIMER = 5
 
 PROGRESS = '-|'
 DEFAULT_FLOAT = None
@@ -104,6 +105,7 @@ class MainWindow(QMainWindow):
         self.pollers.append(self.poller)
 
         self.kafka = kafkaProducer(self.poller.kafka_queue)
+        self.pollers.append(self.kafka)
 
         for tab in conf.grouping['tabs']:
             tabWidget = QSplitter(Qt.Horizontal)
@@ -176,7 +178,8 @@ class MainWindow(QMainWindow):
         self.timerSlow = QTimer()
         self.timerSlow.start(int(1000*SLOWTIMER))
         self.timerSlow.timeout.connect(self.watchdog)
-        self.timerSlow.timeout.connect(self._update_kafka_queue)
+        self.kafkaTimer = QTimer()
+        self.kafkaTimer.timeout.connect(self._update_kafka_queue)
 
         logging.debug(self.all_update_widgets)
 
@@ -184,9 +187,11 @@ class MainWindow(QMainWindow):
         self.poller.kafka_queue.put(self.poller.current_state)
 
     def _start_kafka(self):
+        logging.debug('Action: resume kafka operation')
         self.kafka.resume()
 
     def _stop_kafka(self):
+        logging.debug('Action: pause kafka operation')
         self.kafka.pause()
 
     def new_update_from_queue(self):
