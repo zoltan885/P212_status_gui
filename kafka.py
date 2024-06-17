@@ -38,10 +38,17 @@ GRACE = 5
 
 
 class kafkaProducer():
+    '''
+    the Queue should be a 1 long queue
+    '''
+
     def __init__(self,
+                 queue: Queue,
                  server: str = 'vital-shepherd-6492-eu2-kafka.upstash.io:9092',
                  user: str = 'dml0YWwtc2hlcGhlcmQtNjQ5MiQwo9Jx5TZtgbgkR0M0_gNwluio90evPapj0_Q',
-                 pw: str = 'MTU5OGFkMDgtMjhiMC00M2Q4LTljM2MtMzBkYjczYTY5YWRj'):
+                 pw: str = 'MTU5OGFkMDgtMjhiMC00M2Q4LTljM2MtMzBkYjczYTY5YWRj',
+                 ):
+        self.queue = queue
         self.config = {'bootstrap.servers': server,
                        'sasl.mechanism': 'SCRAM-SHA-256',
                        'security.protocol': 'SASL_SSL',
@@ -50,23 +57,38 @@ class kafkaProducer():
                        'client.id': socket.gethostname()
                        }
         self.producer = Producer(self.config)
-
         self._run = False
 
-    @property
-    def run(self):
-        return self._run
+        self.pauseEvent = Event()
+        self.stopEvent = Event()
 
-    @run.setter
-    def run(self, val: bool):
-        self._run = val
+        self.thr = Thread(target=self._produce_worker, args=(), kwargs={'queue': self.queue, })
+        self.thr.start()
 
-    def produce(self, payload, channel: str = 'P212_status', key: str = 'app_message'):
-        if self._run:
-            try:
-                serial_payload = json.dumps(payload)
-                self.producer.produce(channel, key=key, value=serial_payload)
-            except:
-                pass
-            self.producer.flush()
-        time.sleep(GRACE)
+    def _produce_worker(self, queue, channel: str = 'P212_status', key: str = 'app_message'):
+        log.info('Kafka producer instantiated')
+        while not self.stopEvent.is_set():
+            if not self.pauseEvent.is_set():
+                try:
+                    serial_payload = json.dumps(queue.get())
+                    self.producer.produce(channel, key=key, value=serial_payload)
+                except:
+                    pass
+                self.producer.flush()
+            t0 = time.time()
+            while time.time()-t0 < GRACE:
+                time.sleep(0.1)
+        log.debug('Kafka producer thread stopped')
+
+    def pause(self):
+        self.pauseEvent.set()
+        log.debug('Kafka thread paused')
+
+    def resume(self):
+        self.pauseEvent.clear()
+        log.debug('Kafka thread resumed running')
+
+    def stop(self):
+        self.stopEvent.set()
+        log.debug('Kafka thread stopped')
+        self.thr.join()

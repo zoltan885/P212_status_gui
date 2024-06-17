@@ -51,6 +51,7 @@ class Poller():
         self.pauseEvent = Event()
         self.stopEvent = Event()
         self.queue = Queue(20000)
+        self.kafka_queue = Queue(1)
         self._threads_dct = {}
         self.log = {}  # this is in preparation to some sort of logging even if only for moving average for smooth values
         self.current_state = {}  # this is a slowly updating dict to hold the current state (meant for external appl)
