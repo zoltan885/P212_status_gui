@@ -61,7 +61,7 @@ _coolBlue = '#0d6efd'
 
 FASTTIMER = 0.1
 SLOWTIMER = 1
-KAFKATIMER = 5
+KAFKATIMER = 1
 
 PROGRESS = '-|'
 DEFAULT_FLOAT = None
@@ -85,11 +85,11 @@ class MainWindow(QMainWindow):
         menubar = self.menuBar()
         deb_menu = menubar.addMenu('Debug')
 
-        start_kafka_action = QAction("&Start KAFKA")
+        start_kafka_action = QAction("Start KAFKA", self)
         start_kafka_action.triggered.connect(self._start_kafka)
         deb_menu.addAction(start_kafka_action)
 
-        stop_kafka_action = QAction("&Pause KAFKA")
+        stop_kafka_action = QAction("Pause KAFKA", self)
         stop_kafka_action.triggered.connect(self._stop_kafka)
         deb_menu.addAction(stop_kafka_action)
 
@@ -179,11 +179,18 @@ class MainWindow(QMainWindow):
         self.timerSlow.start(int(1000*SLOWTIMER))
         self.timerSlow.timeout.connect(self.watchdog)
         self.kafkaTimer = QTimer()
+        self.kafkaTimer.start(int(1000*KAFKATIMER))
         self.kafkaTimer.timeout.connect(self._update_kafka_queue)
 
-        logging.debug(self.all_update_widgets)
+#        logging.debug(self.all_update_widgets)
 
     def _update_kafka_queue(self):
+        logging.debug('Putting stuff into the Kafka queue')
+        if not self.poller.kafka_queue.empty():
+            try:
+                _ = self.poller.kafka_queue.get()
+            except:
+                pass
         self.poller.kafka_queue.put(self.poller.current_state)
 
     def _start_kafka(self):

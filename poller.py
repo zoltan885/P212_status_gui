@@ -115,7 +115,7 @@ class Poller():
                 # log.debug(f'Message put in queue ({self.queue}): {mess}')
                 if logged and time.time()-last_log > LOGTIME:
                     self.log[ID].append(logtuple(time.time(), mess['value']))
-                    log.debug(f"{mess['value']} added to log: current log size: {len(self.log[ID])}")
+#                    log.debug(f"{mess['value']} added to log: current log size: {len(self.log[ID])}")
                     last_log = time.time()
                 self.current_state[ID] = statetuple(mess['value'], mess['state'])
             except:
