@@ -5,11 +5,13 @@ Created on Thu May 23 09:56:34 2024
 
 @author: hegedues
 """
+import utilities
 import conditions
 import numpy as np
 import time
 import os
 from collections import namedtuple, deque
+import requests
 
 from threading import Thread
 from multiprocessing import Event, Process, Pool  # , Queue
@@ -17,7 +19,7 @@ from queue import Queue
 import subprocess
 import logging
 log = logging.getLogger(__name__)
-
+logging.getLogger("urllib3").setLevel(logging.WARNING)  # This supresses the urllib3 debug messages
 
 try:
     import PyTango as PT
@@ -25,6 +27,7 @@ try:
 except ImportError as e:
     log.warning(f"{e}")
 
+TINEBASEADDRESS = 'http://acclxcisrv03.desy.de:8080/TINE_Restful/PETRA/HISTORY/'
 
 GRACE = 0.1
 LOGTIME = 1
@@ -32,6 +35,8 @@ DEQUEUE_MAX_SIZE = 2000
 logtuple = namedtuple('log', ['time', 'value'])
 threadtuple = namedtuple('thread', ['index', 'thread'])
 statetuple = namedtuple('state', ['value', 'state'])
+
+TINE_COLORS = {'0': 'UNKNOWN', '1': 'ALARM', '2': 'ON'}
 
 # run an external process and catch the output
 # https://stackoverflow.com/questions/4760215/running-shell-command-and-capturing-the-output
@@ -60,10 +65,11 @@ class Poller():
 
         self.start()
 
-    def add_attr(self, attrdct: dict, ID: str = None, state: bool = False):
+    def add_attr(self, attrdct: dict, state: bool = False):
         dev = attrdct['dev']
         attr = attrdct['attr']
         logged = attrdct['logged']
+        ID = utilities.create_ID(attrdct)
         if ID in self._threads_dct.keys():
             logging.info(f'Thread with ID {ID} already exists')
             return
@@ -117,7 +123,7 @@ class Poller():
                     self.log[ID].append(logtuple(time.time(), mess['value']))
 #                    log.debug(f"{mess['value']} added to log: current log size: {len(self.log[ID])}")
                     last_log = time.time()
-                self.current_state[ID] = statetuple(mess['value'], mess['state'])
+                self.current_state[ID] = statetuple(mess['value'], str(mess['state']))
             except:
                 mess['value'] = None
                 mess['state'] = PT.DevState.UNKNOWN
@@ -125,10 +131,11 @@ class Poller():
             time.sleep(self._grace)
         log.debug(f'Worker thread ({index} {ID}) stopped')
 
-    def add_property(self, prop: tuple, host: str = 'hasep212oh', port: int = 10000, ID: str = None):
+    def add_property(self, prop: tuple, host: str = 'hasep212oh', port: int = 10000):
         '''
         prop is a tuple with free property and property name: e.g. ('FOILS', 'downstream_counter')
         '''
+        ID = utilities.create_ID(prop)
         if ID in self._threads_dct.keys():
             logging.info(f'Thread with ID {ID} already exists')
             return
@@ -172,7 +179,8 @@ class Poller():
             time.sleep(10*self._grace)
         log.debug(f'Worker thread ({index} {ID}) stopped')
 
-    def add_server(self, server: str, ID: str):
+    def add_server(self, server: str):
+        ID = utilities.create_ID(server)
         if ID in self._threads_dct.keys():
             logging.info(f'Thread with ID {ID} already exists')
             return
@@ -211,8 +219,55 @@ class Poller():
             # this is for the thread to quickly terminate
             t = time.time()
             while not self.stopEvent.is_set() and time.time()-t < 100*self._grace:
-                time.sleep(self._grace)
+                time.sleep(0.01)
+        log.debug(f'Worker thread ({index} {ID}) stopped')
 
+    def add_tine(self, tineaddr: str):
+        ID = utilities.create_ID(tineaddr)
+        if ID in self._threads_dct.keys():
+            logging.info(f'Thread with ID {ID} already exists')
+            return
+        index = len(list(self._threads_dct.keys())) + 1
+        thr = Thread(target=self._tine_worker, args=(), kwargs={'tineaddr': tineaddr,
+                                                                'index': index,
+                                                                'ID': ID,
+                                                                'queue': self.queue,
+                                                                })
+        thr.start()
+        self._threads_dct[ID] = threadtuple(index, thr)
+        log.debug(f'Thread (index: {index} ID: {ID}) created and started TID: {thr.native_id}')
+
+    def _tine_worker(self, tineaddr: str, index: int, ID: str, queue: Queue):
+        tine_dev = tineaddr['tine_dev']
+        tine_prop = tineaddr['tine_property']
+        log.debug(f'Worker thread ({index} -> {ID}): started')
+        self.startEvent.wait()
+        log.debug(f'Worker thread ({index}): running')
+        while not self.stopEvent.is_set():
+            if self.pauseEvent.is_set():
+                time.sleep(0.5)
+                continue
+            mess = {}
+            mess['index'] = index
+            mess['ID'] = ID
+            mess['state'] = 'UNKNOWN'
+            try:
+                url = TINEBASEADDRESS + tine_dev + '/' + tine_prop + '/?content=JSON'
+                log.debug(f'URL: {url}')
+                resp = requests.get(url, timeout=(0.2, 0.2))
+                log.debug(f'RESPONSE: {resp.json()}')
+                last_state = resp.json()['data'][0]
+                mess['value'] = last_state
+                self.current_state[ID] = statetuple(mess['value'], str(mess['state']))
+                mess['state'] = TINE_COLORS[str(last_state)]
+            except:
+                mess['value'] = 'unknown'
+            queue.put(mess)
+            log.debug(f'Message put in queue ({self.queue}): {mess}')
+            # this is for the thread to quickly terminate
+            t = time.time()
+            while not self.stopEvent.is_set() and time.time()-t < 10*self._grace:
+                time.sleep(0.01)
         log.debug(f'Worker thread ({index} {ID}) stopped')
 
     def add_to_logging(self):

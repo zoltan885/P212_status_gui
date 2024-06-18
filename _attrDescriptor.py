@@ -20,3 +20,7 @@ _TangoStateColors = {'ON': '#42f545',
                      'ALARM': '#eb962f',
                      'DISABLE': '#f037fa',
                      'UNKNOWN': '#808080'}
+
+_TineStateColors = {'0': ('#808080', 'UNKNOWN'),
+                    '1': ('#fc4e03', 'CLOSED'),
+                    '2': ('#016603', 'OPEN')}

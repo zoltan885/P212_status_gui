@@ -32,13 +32,22 @@ from PyQt5.QtWidgets import (
     QMenu,
     QAction,
 )
+
+
 from collections import defaultdict
 import utilities
 from _settings import _defaults
-import configuration as conf
 from gui_parts import AttributeRow, PropertyRow
 from poller import Poller
 from kafka import kafkaProducer
+
+import importlib
+if len(sys.argv) > 1:
+    conf_name = sys.argv[1]
+    conf = importlib.import_module(conf_name)
+    logging.info(f'{sys.argv[1]} imported')
+else:
+    import configuration as conf
 
 VERSION = {'major': 1, 'minor': 0, 'patch': 0}
 
@@ -138,7 +147,7 @@ class MainWindow(QMainWindow):
                             group_layout.addWidget(widget)
                             self.widgets.append(widget)
                             self.all_update_widgets[ID].append(widget)
-                            self.poller.add_attr(v, state=True, ID=ID)
+                            self.poller.add_attr(v, state=True)
                         elif 'property' in v.keys():
                             ID = utilities.create_ID(v)
                             widget = PropertyRow(k, 'undef', toolTip=ID)
@@ -147,14 +156,29 @@ class MainWindow(QMainWindow):
                             self.widgets.append(widget)
                             self.all_update_widgets[ID].append(widget)
                             v.setdefault('host', _defaults['prop']['host'])
-                            self.poller.add_property(v, host=v['host'], port=10000, ID=ID)
+                            self.poller.add_property(v, host=v['host'], port=10000)
                         elif 'server' in v.keys():
                             ID = utilities.create_ID(v)
                             widget = PropertyRow(k, 'undef', toolTip=ID)
                             group_layout.addWidget(widget)
                             self.widgets.append(widget)
                             self.all_update_widgets[ID].append(widget)
-                            self.poller.add_server(v, ID=ID)
+                            self.poller.add_server(v)
+                        elif 'tine_property' in v.keys():
+                            ID = utilities.create_ID(v)
+                            # widget = PropertyRow(k, 'undef', toolTip=ID)
+
+                            attr_type = 'counter'
+                            v.setdefault('format', 's')
+                            v.setdefault('widgetStyle', _defaults['attr']['widgetStyle'])
+                            v.setdefault('logged', False)
+                            widget = AttributeRow(k, DEFAULT_FLOAT, 'ON', attrType=attr_type,
+                                                  formatString=v['format'], widgetStyle=v['widgetStyle'], toolTip=ID)
+
+                            group_layout.addWidget(widget)
+                            self.widgets.append(widget)
+                            self.all_update_widgets[ID].append(widget)
+                            self.poller.add_tine(v)
 
                     group.setLayout(group_layout)
                     scroll_layout.addWidget(group)
@@ -185,7 +209,7 @@ class MainWindow(QMainWindow):
 #        logging.debug(self.all_update_widgets)
 
     def _update_kafka_queue(self):
-        logging.debug('Putting stuff into the Kafka queue')
+        # logging.debug('Putting stuff into the Kafka queue')
         if not self.poller.kafka_queue.empty():
             try:
                 _ = self.poller.kafka_queue.get()

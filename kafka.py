@@ -29,9 +29,9 @@ conf = {'bootstrap.servers': 'vital-shepherd-6492-eu2-kafka.upstash.io:9092',
         'client.id': socket.gethostname()
         }
 
-server = 'vital-shepherd-6492-eu2-kafka.upstash.io:9092'
-user = 'dml0YWwtc2hlcGhlcmQtNjQ5MiQwo9Jx5TZtgbgkR0M0_gNwluio90evPapj0_Q'
-pw = 'MTU5OGFkMDgtMjhiMC00M2Q4LTljM2MtMzBkYjczYTY5YWRj'
+SERVER = 'vital-shepherd-6492-eu2-kafka.upstash.io:9092'
+USER = 'dml0YWwtc2hlcGhlcmQtNjQ5MiQwo9Jx5TZtgbgkR0M0_gNwluio90evPapj0_Q'
+PASSWORD = 'MTU5OGFkMDgtMjhiMC00M2Q4LTljM2MtMzBkYjczYTY5YWRj'
 
 
 GRACE = 5
@@ -44,9 +44,9 @@ class kafkaProducer():
 
     def __init__(self,
                  queue: Queue,
-                 server: str = 'vital-shepherd-6492-eu2-kafka.upstash.io:9092',
-                 user: str = 'dml0YWwtc2hlcGhlcmQtNjQ5MiQwo9Jx5TZtgbgkR0M0_gNwluio90evPapj0_Q',
-                 pw: str = 'MTU5OGFkMDgtMjhiMC00M2Q4LTljM2MtMzBkYjczYTY5YWRj',
+                 server: str = SERVER,
+                 user: str = USER,
+                 pw: str = PASSWORD,
                  ):
         self.queue = queue
         self.config = {'bootstrap.servers': server,
@@ -68,11 +68,11 @@ class kafkaProducer():
     def _produce_worker(self, queue, channel: str = 'P212_status', key: str = 'app_message'):
         log.info('Kafka producer instantiated')
         while not self.stopEvent.is_set():
-            log.debug('In the loop')
+            # log.debug('In the loop')
             if not self.pauseEvent.is_set():
-                log.debug('Not paused')
+                # log.debug('Not paused')
                 if not queue.empty():
-                    log.debug('Queue not empty')
+                    # log.debug('Queue not empty')
                     try:
                         serial_payload = json.dumps(queue.get())
                         self.producer.produce(channel, key=key, value=serial_payload)

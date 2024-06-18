@@ -23,6 +23,9 @@ def create_ID(configuration_dct):
     if 'dev' in configuration_dct.keys():
         ID = f"attr::{configuration_dct['dev']}/{configuration_dct['attr']}"
         return ID
+    if 'tine_dev' in configuration_dct.keys():
+        ID = f"tine::{configuration_dct['tine_dev']}/{configuration_dct['tine_property']}"
+        return ID
     if 'property' in configuration_dct.keys():
         ID = f"prop::{configuration_dct['host']}:{configuration_dct['property'][0]}/{configuration_dct['property'][1]}"
         return ID
