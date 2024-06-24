@@ -42,6 +42,8 @@ TINE_COLORS = {'0': 'UNKNOWN', '1': 'ALARM', '2': 'ON'}
 # https://stackoverflow.com/questions/4760215/running-shell-command-and-capturing-the-output
 # via ssh
 # https://stackoverflow.com/questions/3586106/perform-commands-over-ssh-with-python
+# inter-process communication
+# https://discuss.python.org/t/version-of-multiprocessing-queue-that-works-with-unrelated-processes/27699/2
 
 
 class Poller():
@@ -59,7 +61,7 @@ class Poller():
         self.kafka_queue = Queue(1)
         self._threads_dct = {}
         self.log = {}  # this is in preparation to some sort of logging even if only for moving average for smooth values
-        self.current_state = {}  # this is a slowly updating dict to hold the current state (meant for external appl)
+        self.current_state = {}  # this is an updating dict to hold the current state (meant for external appl)
         self.last_state = []  # this is to record the last state
         self._grace = GRACE  # this could then be set externally
 
@@ -253,9 +255,9 @@ class Poller():
             mess['state'] = 'UNKNOWN'
             try:
                 url = TINEBASEADDRESS + tine_dev + '/' + tine_prop + '/?content=JSON'
-                log.debug(f'URL: {url}')
+                # log.debug(f'URL: {url}')
                 resp = requests.get(url, timeout=(0.2, 0.2))
-                log.debug(f'RESPONSE: {resp.json()}')
+                # log.debug(f'RESPONSE: {resp.json()}')
                 last_state = resp.json()['data'][0]
                 mess['value'] = last_state
                 self.current_state[ID] = statetuple(mess['value'], str(mess['state']))
@@ -263,7 +265,7 @@ class Poller():
             except:
                 mess['value'] = 'unknown'
             queue.put(mess)
-            log.debug(f'Message put in queue ({self.queue}): {mess}')
+            # log.debug(f'Message put in queue ({self.queue}): {mess}')
             # this is for the thread to quickly terminate
             t = time.time()
             while not self.stopEvent.is_set() and time.time()-t < 10*self._grace:
