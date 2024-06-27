@@ -30,6 +30,7 @@ _defaults = {'attr': {'format': '.4f',
                       },
              'prop': {'host': 'hasep212oh',
                       },
+             'fontsize': 28,
              }
 
 _tine_state_like_property = {0: {'color': '#808080', 'text': 'UNKNOWN'},

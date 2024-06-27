@@ -42,7 +42,7 @@ from poller import Poller
 from tine_poller import TinePoller
 from queue import Queue
 from kafka import kafkaProducer
-from status_bar import Ui_Widget  # this should be changed
+from status_bar import Ui_status_widget  # this should be changed
 
 import importlib
 if len(sys.argv) > 1:
@@ -82,18 +82,24 @@ DEFAULT_FLOAT = None
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__()
+        self.setMinimumSize(500, 500)
         # super.__init__(*args, **kwargs)
         self.comm_queue = Queue(20000)
+        self.kafka_queue = Queue(1)
 
-        self.pollers = []
+        self.pollers = []  # this is to keep track of the current state by merging the current_state attr of all pollers
+        self.threads_to_stop = []
+
         self.poller = Poller(queue=self.comm_queue)
         self.pollers.append(self.poller)
+        self.threads_to_stop.append(self.poller)
 
         self.tine_poller = TinePoller(queue=self.comm_queue)
         self.pollers.append(self.tine_poller)
+        self.threads_to_stop.append(self.tine_poller)
 
-        self.kafka = kafkaProducer(self.poller.kafka_queue)
-        self.pollers.append(self.kafka)
+        self.kafka = kafkaProducer(self.kafka_queue)
+        self.threads_to_stop.append(self.kafka)
 
         self.init_UI()
         self.setWindowTitle(f'P21.2 status v. {".".join([str(_) for _ in VERSION.values()])}')
@@ -138,12 +144,12 @@ class MainWindow(QMainWindow):
                     group = QGroupBox(coll)
                     group_layout = QVBoxLayout()
                     group.setStyleSheet('''QGroupBox {
-                                                        font-size: 26px;
+                                                        font-size: %dpx;
                                                         font-weight: 600;
                                                         border: 2px solid gray;
                                                         border-radius: 5px;
                                                         margin-top: 2.5ex;
-                                                        }''')
+                                                        }''' % (int(_defaults['fontsize'])))
                     for k, v in getattr(conf, coll).items():
                         if 'attr' in v.keys():
                             ID = utilities.create_ID(v)
@@ -200,7 +206,11 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(self.centralWidget)
         self.centralWidget.setLayout(self.mainLayout)
-        self.statusBar().showMessage("this is status bar")
+        # self.statusBar().showMessage("this is status bar")
+        _status_bar_widget = QWidget()
+        self.statusBarWidget = Ui_status_widget()
+        self.statusBarWidget.setupUi(_status_bar_widget)
+        self.statusBar().addWidget(_status_bar_widget)
 
         self.show()
 
@@ -210,21 +220,39 @@ class MainWindow(QMainWindow):
         self.timerFast.timeout.connect(self.new_update_from_queue)
         self.timerSlow = QTimer()
         self.timerSlow.start(int(1000*SLOWTIMER))
-        self.timerSlow.timeout.connect(self.watchdog)
+        self.timerSlow.timeout.connect(self.heartbeat)
         self.kafkaTimer = QTimer()
         self.kafkaTimer.start(int(1000*KAFKATIMER))
         self.kafkaTimer.timeout.connect(self._update_kafka_queue)
 
 #        logging.debug(self.all_update_widgets)
 
+    # the next two functions should be in the kafka module
+
+    def _combine_states(self, state_dcts: list):
+        assert isinstance(state_dcts, list), 'state_dcts should be a list'
+        if len(state_dcts) == 1:
+            return state_dcts[0]
+        dct = state_dcts[0].copy()
+        for d in state_dcts[1:]:
+            dct.update(d)
+        return dct
+
     def _update_kafka_queue(self):
         # logging.debug('Putting stuff into the Kafka queue')
-        if not self.poller.kafka_queue.empty():
+        if not self.kafka.queue.empty():
+            # empty the queue if not yet emptied by the kafkaProducer
             try:
-                _ = self.poller.kafka_queue.get()
+                _ = self.kafka.queue.get_nowait()
             except:
                 pass
-        self.poller.kafka_queue.put(self.poller.current_state)
+        current_states = [p.current_state for p in self.pollers]
+        current_state = self._combine_states(current_states)
+        try:
+            self.kafka.queue.put_nowait(current_state)
+            logging.debug(f'Merged current state put int the kafka queue: {current_state}')
+        except:
+            pass
 
     def _start_kafka(self):
         logging.debug('Action: resume kafka operation')
@@ -273,15 +301,26 @@ class MainWindow(QMainWindow):
             self._updFromQueue(message)
         time.sleep(0.01)
 
-    def watchdog(self):
+    def heartbeat(self):
         '''
         simple text updater to show that the application is still responsive
         '''
         dt = time.time() - self.t0
         if int(dt) % 2 == 0:
-            self.statusBar().showMessage("-")
+            self.statusBarWidget.label_0.setText("-")
         else:
-            self.statusBar().showMessage("|")
+            self.statusBarWidget.label_0.setText("|")
+
+        if int(dt) % 2 == 0:
+            _color1, _color2 = '#fc4e03', '#016603'
+        else:
+            _color1, _color2 = '#016603', '#fc4e03'
+        self.statusBarWidget.label_1.setStyleSheet('''QLabel {background-color: %s;}''' % (_color1))
+        self.statusBarWidget.label_2.setStyleSheet('''QLabel {background-color: %s;}''' % (_color2))
+        self.statusBarWidget.label_3.setStyleSheet('''QLabel {background-color: %s;}''' % (_color1))
+        self.statusBarWidget.label_4.setStyleSheet('''QLabel {background-color: %s;}''' % (_color2))
+        self.statusBarWidget.label_5.setStyleSheet('''QLabel {background-color: %s;}''' % (_color1))
+        self.statusBarWidget.label_6.setStyleSheet('''QLabel {background-color: %s;}''' % (_color2))
 
     def tabChanged(self):
         logging.info(self.centralWidget.currentIndex())
@@ -297,9 +336,9 @@ def main():
     app = QtWidgets.QApplication(sys.argv)
     main = MainWindow()
 
-    pollers = main.pollers
+    threads_to_stop = main.threads_to_stop
     # atexit.register(exitHandler, pollers)  # this would be good, but it only handles terminal exits, and not the gui
-    app.aboutToQuit.connect(lambda x=pollers: exitHandler(x))
+    app.aboutToQuit.connect(lambda x=threads_to_stop: exitHandler(x))
     # app.setStyleSheet(Path('style.qss').read_text())
 
     main.show()
