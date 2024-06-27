@@ -53,11 +53,14 @@ class Poller():
     the read values end up in the queue of the class as a dict
     '''
 
-    def __init__(self):
+    def __init__(self, queue: Queue = None):
         self.startEvent = Event()
         self.pauseEvent = Event()
         self.stopEvent = Event()
-        self.queue = Queue(20000)
+        if not queue:
+            self.queue = Queue(20000)
+        else:
+            self.queue = queue
         self.kafka_queue = Queue(1)
         self._threads_dct = {}
         self.log = {}  # this is in preparation to some sort of logging even if only for moving average for smooth values

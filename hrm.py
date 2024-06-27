@@ -39,6 +39,7 @@ import utilities
 from _settings import _defaults
 from gui_parts import AttributeRow, PropertyRow
 from poller import Poller
+from queue import Queue
 from kafka import kafkaProducer
 
 import importlib
@@ -82,6 +83,7 @@ class MainWindow(QMainWindow):
         # super.__init__(*args, **kwargs)
         self.init_UI()
         self.setWindowTitle(f'P21.2 status v. {".".join([str(_) for _ in VERSION.values()])}')
+        self.comm_queue = Queue(20000)
 
     def init_UI(self):
         # uic.loadUi('hrm2.ui', self)

@@ -21,6 +21,7 @@ _TangoStateColors = {'ON': '#42f545',
                      'DISABLE': '#f037fa',
                      'UNKNOWN': '#808080'}
 
-_TineStateColors = {'0': ('#808080', 'UNKNOWN'),
-                    '1': ('#fc4e03', 'CLOSED'),
-                    '2': ('#016603', 'OPEN')}
+_tine_state_like_property = {0: {'color': '#808080', 'text': 'UNKNOWN'},
+                             1: {'color': '#fc4e03', 'text': 'CLOSED'},
+                             2: {'color': '#016603', 'text': 'OPEN'},
+                             }

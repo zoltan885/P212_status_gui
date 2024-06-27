@@ -5,8 +5,9 @@ Created on Tue Jun 18 20:47:13 2024
 
 @author: hegedues
 """
+__all__ = ['TinePoller']
 
-
+import _attrDescriptor
 import utilities
 import conditions
 import numpy as np
@@ -26,24 +27,18 @@ import logging
 log = logging.getLogger(__name__)
 logging.getLogger("urllib3").setLevel(logging.WARNING)  # This supresses the urllib3 debug messages
 
-try:
-    import PyTango as PT
-    TANGO = True
-except ImportError as e:
-    log.warning(f"{e}")
-
-TINEBASEADDRESS = 'http://acclxcisrv03.desy.de:8080/TINE_Restful/PETRA/HISTORY/'
 
 GRACE = 2
-DEQUEUE_MAX_SIZE = 2000
 logtuple = namedtuple('log', ['time', 'value'])
 threadtuple = namedtuple('thread', ['index', 'thread'])
 statetuple = namedtuple('state', ['value', 'state'])
 
+TINEBASEADDRESS = 'http://acclxcisrv03.desy.de:8080/TINE_Restful/PETRA/HISTORY/'
 TINE_STATE_LIKE_PROPS = ['P21.Stellung']
 
-TINE_STATE_COLORS = {'0': 'UNKNOWN', '1': 'ALARM', '2': 'ON'}
-TINE_STATE_TEXT = {'0': 'UNKNOWN', '1': 'CLOSED', '2': 'OPEN'}
+# this should be exchanged to the _attrDescriptor _tine_state_colors
+TINE_STATE_COLORS = {0: 'UNKNOWN', 1: 'ALARM', 2: 'ON'}
+TINE_STATE_TEXT = {0: 'UNKNOWN', 1: 'CLOSED', 2: 'OPEN'}
 
 
 '''
@@ -84,11 +79,14 @@ class TinePoller():
     threads as individual properties, not as individual devices
     '''
 
-    def __init__(self, ):
+    def __init__(self, queue: Queue = None):
         self.startEvent = Event()
         self.pauseEvent = Event()
         self.stopEvent = Event()
-        self.queue = Queue(20000)
+        if not queue:
+            self.queue = Queue(20000)
+        else:
+            self.queue = queue
         self._loggedProperties = defaultdict(dict)
         # {
         # prop1: {full_dev_list: [], current_devices: {dev1: index, dev2: index}},
@@ -97,12 +95,9 @@ class TinePoller():
         self._threads_dct = {}
         self.log = {}
         self.current_state = {}  # dict holding the current state (meant for external appl)
-        self._grace = GRACE  # this could then be set externally
+        self._grace = GRACE
 
-        self.start()
-
-    def _categorize(self, tineaddr):
-        pass
+        self.start()  # issue start event, but nothing is getting logged yet: no workers
 
     def _get_new_prop_list(self, tineaddr: str):
         '''
@@ -167,7 +162,8 @@ class TinePoller():
                 # log.debug(f'URL: {url}')
                 resp = requests.get(url, timeout=(0.2, 0.2))
                 # log.debug(f'RESPONSE: {resp.json()}')
-                last_state = resp.json()['data']
+                # last_state = resp.json()['data']
+                last_state = [float(i) for i in resp.json()['data'].split(',')]
                 success = True
             except:
                 pass
@@ -178,12 +174,18 @@ class TinePoller():
                     ID = f"tine::{dev}/{tine_property}"
                     mess['ID'] = ID
                     mess['state'] = 'UNKNOWN'
+                    # for state like properties, the vale is swapped to something meaningful
                     if tine_property in TINE_STATE_LIKE_PROPS:
-                        mess['value'] = TINE_STATE_TEXT[last_state[index]]
+                        # log.debug('HANDLED AS STATE-LIKE PROP')
+                        mess['value'] = TINE_STATE_TEXT[int(last_state[index])]
                         self.current_state[ID] = statetuple(mess['value'], str(mess['state']))
-                        mess['state'] = TINE_STATE_COLORS[str(last_state[index])]
+                        mess['state'] = TINE_STATE_COLORS[int(last_state[index])]
+                        mess['color'] = _attrDescriptor._tine_state_like_property[int(last_state[index])]['color']
+                        mess['text'] = _attrDescriptor._tine_state_like_property[int(last_state[index])]['text']
+                    # for other properties the value is kept as is
                     else:
-                        mess['value'] = last_state[index]
+                        # log.debug(f'HANDLED AS FLOAT, {last_state}')
+                        mess['value'] = float(last_state[index])
                         self.current_state[ID] = statetuple(mess['value'], str(mess['state']))
                         mess['state'] = 'ON'
                     queue.put(mess)
@@ -211,8 +213,20 @@ class TinePoller():
     def running_threads(self):
         return len(list(self._threads_dct.keys()))
 
+    @property
+    def grace(self):
+        return self._grace
+
+    @grace.setter
+    def grace(self, val: float):
+        if val < 1:
+            log.error(f"Tine polling period can not be smaller than 1 s (attempted to set it to {val})")
+            return
+        self._grace = val
+        log.info(f'Tine poller grace period set to {self._grace}')
     #
     #
+
     def start(self):
         self.startEvent.set()
         log.debug('Tine poller threads started')
@@ -229,7 +243,7 @@ class TinePoller():
         self.stopEvent.set()
         log.debug('Tine poller threads stopped')
         for thr in self._threads_dct.values():
-            thr.thread.join()
+            thr.join()
 
     @property
     def threads_dct(self):
@@ -237,6 +251,35 @@ class TinePoller():
 
 
 # debugging
+
+def test_proc(queue: Queue = None):
+    if queue:
+        TP = TinePoller(queue=queue)
+    else:
+        TP = TinePoller()
+    add2 = {'tine_dev': 'V2_B', 'tine_property': 'P21.Stellung', 'format': 's'}
+    add1 = {'tine_dev': 'PS2_B', 'tine_property': 'P21.Stellung', 'format': 's'}
+    add3 = {'tine_dev': 'P0max', 'tine_property': 'P21.Druck', 'format': 's'}
+    try:
+        TP._add_dev_to_log(add3)
+        TP._add_dev_to_log(add1)
+        time.sleep(5)
+        TP._add_dev_to_log(add2)
+        time.sleep(5)
+        TP._add_dev_to_log(add2)
+        time.sleep(2)
+        TP.grace = 0.1
+        time.sleep(0.2)
+        print(TP.grace)
+        TP.grace = 3
+
+        print('Stopping')
+        TP.stop()
+    except:
+        pass
+    finally:
+        TP.stop()
+
 
 if __name__ == "__main__":
     logFormatter = logging.Formatter(
@@ -247,11 +290,4 @@ if __name__ == "__main__":
     consoleHandler.setFormatter(logFormatter)
     rootLogger.addHandler(consoleHandler)
 
-    TP = TinePoller()
-    add2 = {'tine_dev': 'V2_B', 'tine_property': 'P21.Stellung', 'format': 's'}
-    add1 = {'tine_dev': 'PS2_B', 'tine_property': 'P21.Stellung', 'format': 's'}
-    TP._add_dev_to_log(add1)
-    time.sleep(10)
-    TP._add_dev_to_log(add2)
-    time.sleep(10)
-    TP._add_dev_to_log(add2)
+    test_proc()
