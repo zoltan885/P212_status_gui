@@ -15,6 +15,9 @@ from _settings import attrDescriptor, _TangoStateColors
 import logging
 log = logging.getLogger(__name__)
 
+# custom widgets in Designer
+# https://doc.qt.io/archives/qq/qq26-pyqtdesigner.html
+
 
 class AttributeRow(QtWidgets.QWidget):
     def __init__(self, label: str, value: float, state: str, attrType='position', formatString='.4f', widgetStyle='number', toolTip=None):
@@ -84,6 +87,11 @@ class AttributeRow(QtWidgets.QWidget):
             self.value.setText(f'{value:{self.formatString}}')
         elif value is None:
             self.value.setText('None')
+        # this is to potentially overwrite the tango state color
+        if color:
+            _color = color
+        else:
+            _color = _TangoStateColors[state]
         if self.widgetStyle == 'frame' and state is not None:
             color = attrDescriptor[self.attrType]['color']
             self.value.setStyleSheet('''QLabel {
@@ -92,23 +100,24 @@ class AttributeRow(QtWidgets.QWidget):
                                                 font-weight: 600;
                                                 border-radius: 3px;
                                                 border: 2px solid %s;
-                                                }''' % (color, _TangoStateColors[state]))
+                                                }''' % (color, _color))
         elif self.widgetStyle == 'number' and state is not None:
             self.value.setStyleSheet('''QLabel {
                                                 color: %s;
                                                 font-size: 30px;
                                                 font-weight: 600;
-                                                }''' % (_TangoStateColors[state]))
+                                                }''' % (_color))
         elif self.widgetStyle == 'background' and state is not None:
+
             self.value.setStyleSheet('''QLabel {
                                                 background-color: %s;
                                                 color: black;
                                                 font-size: 30px;
                                                 font-weight: 600;
                                                 border-radius: 3px;
-                                                }''' % (_TangoStateColors[state]))
+                                                }''' % (_color))
         if state is not None:
-            self.state.setStyleSheet('QLabel {background-color: %s; border-radius: 3px;}' % _TangoStateColors[state])
+            self.state.setStyleSheet('QLabel {background-color: %s; border-radius: 3px;}' % _color)
             self.state.setText(state)
 
 

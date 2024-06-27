@@ -155,7 +155,6 @@ class TinePoller():
                 time.sleep(0.5)
                 continue
             current_devices = self._loggedProperties[tine_property]['current_devices']
-            print(f'Current devices: {current_devices}')
             success = False
             try:
                 url = TINEBASEADDRESS + dev_to_poll + '/' + tine_property + '/?content=JSON'
@@ -189,7 +188,7 @@ class TinePoller():
                         self.current_state[ID] = statetuple(mess['value'], str(mess['state']))
                         mess['state'] = 'ON'
                     queue.put(mess)
-                    log.debug(f'Message put in queue ({self.queue}): {mess}')
+                    # log.debug(f'Message put in queue ({self.queue}): {mess}')
             # this is for the thread to quickly terminate
             t = time.time()
             while not self.stopEvent.is_set() and time.time()-t < self._grace:

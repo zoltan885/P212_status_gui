@@ -42,6 +42,7 @@ from poller import Poller
 from tine_poller import TinePoller
 from queue import Queue
 from kafka import kafkaProducer
+from status_bar import Ui_Widget  # this should be changed
 
 import importlib
 if len(sys.argv) > 1:
@@ -200,6 +201,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.centralWidget)
         self.centralWidget.setLayout(self.mainLayout)
         self.statusBar().showMessage("this is status bar")
+
         self.show()
 
         self.timerFast = QTimer()
