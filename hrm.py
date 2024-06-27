@@ -52,7 +52,7 @@ if len(sys.argv) > 1:
 else:
     import configuration as conf
 
-VERSION = {'major': 1, 'minor': 1, 'patch': 0}
+VERSION = {'major': 1, 'minor': 2, 'patch': 0}
 
 logFormatter = logging.Formatter(
     "%(asctime)-25.25s %(threadName)-12.12s %(name)-25.24s %(levelname)-10.10s %(message)s")
