@@ -12,6 +12,7 @@ blue = '#0d6efd'
 attrDescriptor = {'position': {'color': '#000000', 'border': '2px solid #0d6efd'},
                   'counter': {'color': '#ff7f50', 'border': '2px solid #ff0000'},
                   'globalProp': {'color': '#10bfde', 'border': '1px #10bfde'},
+                  'tine': {'color': '#ff7f50', 'border': '2px solid #ff0000'},
                   }
 
 _TangoStateColors = {'ON': '#6beda5',  # '#42f545',
@@ -30,3 +31,8 @@ _defaults = {'attr': {'format': '.4f',
              'prop': {'host': 'hasep212oh',
                       },
              }
+
+_tine_state_like_property = {0: {'color': '#808080', 'text': 'UNKNOWN'},
+                             1: {'color': '#fc4e03', 'text': 'CLOSED'},
+                             2: {'color': '#016603', 'text': 'OPEN'},
+                             }

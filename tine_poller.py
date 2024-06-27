@@ -7,7 +7,7 @@ Created on Tue Jun 18 20:47:13 2024
 """
 __all__ = ['TinePoller']
 
-import _attrDescriptor
+import _settings
 import utilities
 import conditions
 import numpy as np
@@ -128,7 +128,7 @@ class TinePoller():
         thr.start()
         self._threads_dct[prop] = thr
 
-    def _add_dev_to_log(self, tineaddr):
+    def add_dev_to_log(self, tineaddr):
         prop = tineaddr['tine_property']
         dev = tineaddr['tine_dev']
         if prop not in self._loggedProperties.keys():
@@ -180,8 +180,8 @@ class TinePoller():
                         mess['value'] = TINE_STATE_TEXT[int(last_state[index])]
                         self.current_state[ID] = statetuple(mess['value'], str(mess['state']))
                         mess['state'] = TINE_STATE_COLORS[int(last_state[index])]
-                        mess['color'] = _attrDescriptor._tine_state_like_property[int(last_state[index])]['color']
-                        mess['text'] = _attrDescriptor._tine_state_like_property[int(last_state[index])]['text']
+                        mess['color'] = _settings._tine_state_like_property[int(last_state[index])]['color']
+                        mess['text'] = _settings._tine_state_like_property[int(last_state[index])]['text']
                     # for other properties the value is kept as is
                     else:
                         # log.debug(f'HANDLED AS FLOAT, {last_state}')
@@ -261,12 +261,12 @@ def test_proc(queue: Queue = None):
     add1 = {'tine_dev': 'PS2_B', 'tine_property': 'P21.Stellung', 'format': 's'}
     add3 = {'tine_dev': 'P0max', 'tine_property': 'P21.Druck', 'format': 's'}
     try:
-        TP._add_dev_to_log(add3)
-        TP._add_dev_to_log(add1)
+        TP.add_dev_to_log(add3)
+        TP.add_dev_to_log(add1)
         time.sleep(5)
-        TP._add_dev_to_log(add2)
+        TP.add_dev_to_log(add2)
         time.sleep(5)
-        TP._add_dev_to_log(add2)
+        TP.add_dev_to_log(add2)
         time.sleep(2)
         TP.grace = 0.1
         time.sleep(0.2)

@@ -39,6 +39,7 @@ import utilities
 from _settings import _defaults
 from gui_parts import AttributeRow, PropertyRow
 from poller import Poller
+from tine_poller import TinePoller
 from queue import Queue
 from kafka import kafkaProducer
 
@@ -81,9 +82,20 @@ class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__()
         # super.__init__(*args, **kwargs)
+        self.comm_queue = Queue(20000)
+
+        self.pollers = []
+        self.poller = Poller(queue=self.comm_queue)
+        self.pollers.append(self.poller)
+
+        self.tine_poller = TinePoller(queue=self.comm_queue)
+        self.pollers.append(self.tine_poller)
+
+        self.kafka = kafkaProducer(self.poller.kafka_queue)
+        self.pollers.append(self.kafka)
+
         self.init_UI()
         self.setWindowTitle(f'P21.2 status v. {".".join([str(_) for _ in VERSION.values()])}')
-        self.comm_queue = Queue(20000)
 
     def init_UI(self):
         # uic.loadUi('hrm2.ui', self)
@@ -107,16 +119,10 @@ class MainWindow(QMainWindow):
         self.mainLayout = QHBoxLayout()
 
         self.t0 = time.time()
-        self.pollers = []
+
         self.widgets = []
         self.scrolls = []
         self.all_update_widgets = defaultdict(list)
-
-        self.poller = Poller()
-        self.pollers.append(self.poller)
-
-        self.kafka = kafkaProducer(self.poller.kafka_queue)
-        self.pollers.append(self.kafka)
 
         for tab in conf.grouping['tabs']:
             tabWidget = QSplitter(Qt.Horizontal)
@@ -170,17 +176,16 @@ class MainWindow(QMainWindow):
                             ID = utilities.create_ID(v)
                             # widget = PropertyRow(k, 'undef', toolTip=ID)
 
-                            attr_type = 'counter'
+                            attr_type = 'tine'
                             v.setdefault('format', 's')
                             v.setdefault('widgetStyle', _defaults['attr']['widgetStyle'])
                             v.setdefault('logged', False)
                             widget = AttributeRow(k, DEFAULT_FLOAT, 'ON', attrType=attr_type,
                                                   formatString=v['format'], widgetStyle=v['widgetStyle'], toolTip=ID)
-
                             group_layout.addWidget(widget)
                             self.widgets.append(widget)
                             self.all_update_widgets[ID].append(widget)
-                            self.poller.add_tine(v)
+                            self.tine_poller.add_dev_to_log(v)
 
                     group.setLayout(group_layout)
                     scroll_layout.addWidget(group)
@@ -228,7 +233,8 @@ class MainWindow(QMainWindow):
         self.kafka.pause()
 
     def new_update_from_queue(self):
-        qu = self.poller.queue
+        # qu = self.poller.queue
+        qu = self.comm_queue
         while not qu.empty():
             message = qu.get()
             self._upd_from_queue(message)
