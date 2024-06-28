@@ -74,8 +74,12 @@ class kafkaProducer():
                 if not queue.empty():
                     # log.debug('Queue not empty')
                     try:
-                        serial_payload = json.dumps(queue.get())
+                        state = queue.get()
+                        # log.debug(f'IN THR KAFKA THREAD: {state}')
+                        serial_payload = json.dumps(state)
+                        # log.debug('Serial payload produced')
                         self.producer.produce(channel, key=key, value=serial_payload)
+                        # log.debug('Sending successful')
                     except:
                         pass
                 self.producer.flush()

@@ -140,7 +140,7 @@ class PropertyRow(QtWidgets.QWidget):
         color = attrDescriptor['globalProp']['color']
         self.value = QLabel(value)
         if toolTip is not None:
-            self.value.setToolTip(toolTip)
+            self.label.setToolTip(toolTip)
         self.value.setMinimumWidth(150)
         self.value.setStyleSheet('''QLabel {
                                             color: %s;

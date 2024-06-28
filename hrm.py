@@ -250,7 +250,7 @@ class MainWindow(QMainWindow):
         current_state = self._combine_states(current_states)
         try:
             self.kafka.queue.put_nowait(current_state)
-            logging.debug(f'Merged current state put int the kafka queue: {current_state}')
+            # logging.debug(f'Merged current state put int the kafka queue: {current_state}')
         except:
             pass
 
