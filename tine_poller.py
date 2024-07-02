@@ -112,10 +112,11 @@ class TinePoller():
             resp = requests.get(url, timeout=(0.2, 0.2))
             dev_list = [i['name'] for i in resp.json()]
             if len(dev_list) == 1 and dev_list[0] == 'keyword':
-                log.error(f'No such Tine property: {prop}')
+                log.error(f'No such Tine property: {url}')
                 raise IOError
         except:
-            log.error(f'No such Tine property: {prop}')
+            log.error(f'Could not connect to Tine server: {prop}')
+            raise IOError
         self._loggedProperties[prop]['full_dev_list'] = dev_list
         self._loggedProperties[prop]['current_devices'] = {}
         log.info(f'full_dev_list created for property {prop}')
@@ -132,7 +133,11 @@ class TinePoller():
         prop = tineaddr['tine_property']
         dev = tineaddr['tine_dev']
         if prop not in self._loggedProperties.keys():
-            self._get_new_prop_list(tineaddr)
+            try:
+                self._get_new_prop_list(tineaddr)
+            except:
+                log.error(f'Could not get Tine property {tineaddr}')
+                return
         if dev not in self._loggedProperties[prop]['full_dev_list']:
             log.error(f'{dev} not in full device list of {prop}\ndevice not added to logging')
         ind = self._loggedProperties[prop]['full_dev_list'].index(dev)
