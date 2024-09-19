@@ -23,7 +23,8 @@ _TangoStateColors = {'ON': '#6beda5',  # '#42f545',
                      'INIT': '#daa06d',
                      'ALARM': '#eb962f',
                      'DISABLE': '#f037fa',
-                     'UNKNOWN': '#808080'}
+                     'UNKNOWN': '#808080',
+                     None: '#808080'}
 
 _defaults = {'attr': {'format': '.4f',
                       'widgetStyle': 'background',

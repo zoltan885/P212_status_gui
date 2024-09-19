@@ -52,7 +52,7 @@ if len(sys.argv) > 1:
 else:
     import configuration as conf
 
-VERSION = {'major': 1, 'minor': 2, 'patch': 0}
+VERSION = {'major': 1, 'minor': 2, 'patch': 1}
 
 logFormatter = logging.Formatter(
     "%(asctime)-25.25s %(threadName)-12.12s %(name)-25.24s %(levelname)-10.10s %(message)s")
@@ -98,8 +98,8 @@ class MainWindow(QMainWindow):
         self.pollers.append(self.tine_poller)
         self.threads_to_stop.append(self.tine_poller)
 
-        self.kafka = kafkaProducer(self.kafka_queue)
-        self.threads_to_stop.append(self.kafka)
+        #self.kafka = kafkaProducer(self.kafka_queue)
+        #self.threads_to_stop.append(self.kafka)
 
         self.init_UI()
         self.setWindowTitle(f'P21.2 status v. {".".join([str(_) for _ in VERSION.values()])}')
@@ -116,11 +116,11 @@ class MainWindow(QMainWindow):
         deb_menu = menubar.addMenu('Debug')
 
         start_kafka_action = QAction("Start KAFKA", self)
-        start_kafka_action.triggered.connect(self._start_kafka)
+        #start_kafka_action.triggered.connect(self._start_kafka)
         deb_menu.addAction(start_kafka_action)
 
         stop_kafka_action = QAction("Pause KAFKA", self)
-        stop_kafka_action.triggered.connect(self._stop_kafka)
+        #stop_kafka_action.triggered.connect(self._stop_kafka)
         deb_menu.addAction(stop_kafka_action)
 
         self.mainLayout = QHBoxLayout()
@@ -221,9 +221,9 @@ class MainWindow(QMainWindow):
         self.timerSlow = QTimer()
         self.timerSlow.start(int(1000*SLOWTIMER))
         self.timerSlow.timeout.connect(self.heartbeat)
-        self.kafkaTimer = QTimer()
-        self.kafkaTimer.start(int(1000*KAFKATIMER))
-        self.kafkaTimer.timeout.connect(self._update_kafka_queue)
+        #self.kafkaTimer = QTimer()
+        #self.kafkaTimer.start(int(1000*KAFKATIMER))
+        #self.kafkaTimer.timeout.connect(self._update_kafka_queue)
 
 #        logging.debug(self.all_update_widgets)
 

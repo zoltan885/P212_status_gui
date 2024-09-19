@@ -56,7 +56,11 @@ class kafkaProducer():
                        'sasl.password': pw,
                        'client.id': socket.gethostname()
                        }
-        self.producer = Producer(self.config)
+        try:
+            self.producer = Producer(self.config)
+        except:
+            log.error('Could not instantiate Kafka producer')
+            return 1
 
         self.pauseEvent = Event()
         self.pauseEvent.set()
