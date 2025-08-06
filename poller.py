@@ -70,10 +70,13 @@ class Poller():
 
         self.start()
 
-    def add_attr(self, attrdct: dict, state: bool = False):
+    def add_attr(self, attrdct: dict, state: bool = False, name: str = None):
         dev = attrdct['dev']
         attr = attrdct['attr']
-        logged = attrdct['logged']
+        if hasattr(attrdct, 'logged'):
+            logged = attrdct['logged']
+        else:
+            logged = False
         ID = utilities.create_ID(attrdct)
         if ID in self._threads_dct.keys():
             logging.info(f'Thread with ID {ID} already exists')
@@ -98,7 +101,9 @@ class Poller():
                                                                      'devProxy': devProxy,
                                                                      'queue': self.queue,
                                                                      'ID': ID,
-                                                                     'logged': logged})
+                                                                     'logged': logged,
+                                                                     'name': name,
+                                                                     })
         thr.start()
         if logged:
             logging.debug('Added logged attribute {attr}')
@@ -107,7 +112,7 @@ class Poller():
         self._threads_dct[ID] = threadtuple(index, thr)
         log.debug(f'Thread (index: {index}, ID: {ID}) created and started TID: {thr.native_id}')
 
-    def _attribute_worker(self, index: int = None, ID: str = None, attrProxy=None, devProxy=None, queue=None, logged=False):
+    def _attribute_worker(self, index: int = None, ID: str = None, attrProxy=None, devProxy=None, queue=None, logged=False, name=None):
         log.debug(f'Worker thread ({index} -> {ID}): started')
         self.startEvent.wait()
         log.debug(f'Worker thread ({index}): running')
@@ -119,6 +124,8 @@ class Poller():
             mess = {}
             mess['index'] = index
             mess['ID'] = ID
+            mess['name'] = name
+            mess['timestamp'] = time.time()
             try:
                 # mess['value'] = attrProxy.read()  # this would be nice, but can not be pickled: RuntimeError
                 mess['value'] = attrProxy.read().value
