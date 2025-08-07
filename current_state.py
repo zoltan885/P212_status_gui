@@ -3,6 +3,7 @@ import time
 import logging
 from collections import namedtuple, deque
 from multiprocessing import Event
+from threading import Lock
 import threading
 from queue import Queue, Empty
 
@@ -23,6 +24,47 @@ DEBUG = False  # set to True to enable debug logging
 # TODO - consider adding more detailed logging for debugging purposes
 # TODO - the outgoing messages should not contain pytango states, but just a string representation of them
 
+
+class OverwritingSingleSlotQueue:
+    """
+    A thread-safe queue with a single slot that overwrites its content on each put.
+    This queue is designed to hold only one item at a time. When a new item is put into the queue,
+    it replaces the existing item if present. The queue supports thread-safe put and get operations,
+    where get will wait for an item to become available, optionally with a timeout.
+    Methods
+    -------
+    put(item):
+        Add an item to the queue, overwriting any existing item.
+    get(timeout=None):
+        Retrieve the current item from the queue without removing it.
+        If the queue is empty, waits until an item is available or until the timeout expires.
+        Raises TimeoutError if no item is available within the timeout.
+    empty():
+        Returns True if the queue is empty, False otherwise.
+    
+    """
+    def __init__(self):
+        self._data = deque(maxlen=1)
+        self._lock = threading.Lock()
+        self._not_empty = threading.Condition(self._lock)
+
+    def put(self, item):
+        with self._lock:
+            self._data.append(item)
+            self._not_empty.notify_all()
+
+    def get(self, timeout=None):
+        with self._not_empty:
+            if not self._data:
+                if not self._not_empty.wait(timeout=timeout):
+                    raise TimeoutError("Timeout waiting for item.")
+            if self._data:
+                return self._data[0]  # Return without removing
+            raise TimeoutError("Timeout waiting for item.")  # Edge case
+
+    def empty(self):
+        with self._lock:
+            return len(self._data) == 0
 
 
 class CurrentStateMonitor:
@@ -73,7 +115,7 @@ class CurrentStateMonitor:
     def __init__(self,
                  in_queue:Queue = None,
                  update_queue:Queue = None,
-                 snapshot_queue:Queue = None):
+                 snapshot_queue:OverwritingSingleSlotQueue = None):
         self.in_queue = in_queue
         self.filtered_messages = deque([], maxlen=10000)  # to keep the messages in their original format, agnostic to message details
         self.update_queue = update_queue
@@ -86,9 +128,14 @@ class CurrentStateMonitor:
         self.pause_report.set()  # initially paused
         self.stop_report = Event()
         self._lock = threading.Lock()
+        
         self.report_thread = threading.Thread(target=self._report_worker)
         self.report_thread.daemon = True  # to ensure the thread will not block program exit
         self.report_thread.start()
+
+        self.snapshot_thread = threading.Thread(target=self._snapsot_worker)
+        self.snapshot_thread.daemon = True  # to ensure the thread will not block program exit
+        self.snapshot_thread.start()
 
 
     def _isclose(self, a, b, rtol=RTOL, atol=ATOL):
@@ -180,7 +227,7 @@ class CurrentStateMonitor:
             while not self.in_queue.empty():
                 try:
                     msg = self.in_queue.get(timeout=0.01)
-                    logging.info(f"Got message: {msg}")
+                    #logging.info(f"Got message: {msg}")
                     ID = msg['ID']
                     value = msg['value']
                     state = msg['state']
@@ -294,6 +341,21 @@ class CurrentStateMonitor:
             else:
                 pass
                 #logging.debug('Report worker is paused')
+            time.sleep(self.report_interval)
+
+    def _snapsot_worker(self):
+        """
+        Worker method to periodically create and send snapshots of the current state.
+        
+        This method runs in a separate thread and calls the snapshot method at intervals defined by
+        the report_interval attribute. It handles exceptions that may occur during snapshot creation.
+        """
+        while not self.stop_report.is_set():
+            if not self.pause_report.is_set():
+                try:
+                    self.snapshot()
+                except Exception as e:
+                    logging.error('Error in snapshot worker: %s', e)
             time.sleep(self.report_interval)
 
     def __del__(self):

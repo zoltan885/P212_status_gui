@@ -19,7 +19,8 @@ from nats.aio.client import Client as NATS
 
 from load_credits import parse_creds
 from poller import Poller
-from current_state import CurrentStateMonitor
+from current_state import CurrentStateMonitor, OverwritingSingleSlotQueue
+from publisher_simple import UpdatePublisher, SnapshotWorker
 #from status_bar import Ui_Widget  # this should be changed
 
 import importlib
@@ -30,7 +31,6 @@ if len(sys.argv) > 1:
 else:
     import configuration as conf
 
-VERSION = {'major': 1, 'minor': 2, 'patch': 0}
 
 logFormatter = logging.Formatter(
     "%(asctime)-25.25s %(threadName)-12.12s %(name)-25.24s %(levelname)-10.10s %(message)s")
@@ -45,8 +45,6 @@ consoleHandler = logging.StreamHandler()
 consoleHandler.setFormatter(logFormatter)
 rootLogger.addHandler(consoleHandler)
 
-
-_coolBlue = '#0d6efd'
 
 CRED_PATH = "/home/p212user/zoltan/P212_status_gui/credits.creds"
 USE_GZIP = True  # Set to True to enable gzip compression
@@ -116,7 +114,7 @@ async def main():
     poller = Poller(queue = comm_queue)
 
     update_queue = Queue(1000)
-    snapshot_queue = Queue(2)
+    snapshot_queue = OverwritingSingleSlotQueue()
     
     
     for tab in conf.grouping['tabs']:
@@ -133,70 +131,38 @@ async def main():
 
     CSM = CurrentStateMonitor(in_queue=comm_queue, update_queue=update_queue, snapshot_queue=snapshot_queue)
     CSM.start_self_report()
-    
-    if PUBLISH:
-        jwt, seed = parse_creds(CRED_PATH)
-        kp = nkeys.from_seed(seed.encode())
-        nc = NATS()
-        
 
-        await nc.connect(
-            servers=["tls://connect.ngs.global:4222"],
-            user_jwt_cb=lambda: jwt.encode("utf-8"),
-            signature_cb=lambda nonce: base64.b64encode(kp.sign(nonce.encode())),
-            name="jwt-python-publisher",
-        )
+    time.sleep(2)   # wait for poller to start and produce some data
 
-        #js = nc.jetstream()
-        #await nc.subscribe("sensors.snapshot.request", cb=snapshot_request_handler)
+    publisher = UpdatePublisher(update_queue, topic="sensors.updates")
+    await publisher.setup()
+    publisher.publish_event.set()
 
-    if PUBLISH:
-        await nc.publish("sensors.updates", encode_data({1: {1: 'Greetings', 'timestamp': time.time()}}, USE_GZIP))
-    c = 0
+
+
+    snapshot_worker = SnapshotWorker(snapshot_queue, topic="sensors.snapshot", request_topic="sensors.snapshot.request")
+    await snapshot_worker.setup()
+    snapshot_worker.publish_period = 3
+    snapshot_worker.publish_periodic = True
+
     while True:
         try:
-            if PUBLISH:
-                logging.info('Publishing updates...')
-                #dct = {'dict': {'value': 12345, 'timestamp': time.time()}}  
-                dct = {}
-                ctr = 1
-                if not update_queue.empty():
-                    logging.info(f'Queue size: {update_queue.qsize()}')
-                    while not update_queue.empty():
-                        dct[ctr] = update_queue.get(timeout=0.1)
-                        ctr += 1
-                if dct:
-                    await nc.publish("sensors.updates", encode_data(dct, USE_GZIP))
-                    #logging.warning(f"Published update: {dct}")
-            else:
-                queue_printer(queue=update_queue)
-                
+            await asyncio.sleep(0.1)  # Keep the event loop running
         except asyncio.CancelledError:
             logging.info("KeyboardInterrupt received, exiting...")
             break
         except Exception as e:
             logging.error(f"An error occurred: {e}")
             break
-        finally:
-            if MONITOR:
-                monitor_thread.join(timeout=0.1)
-
-        await asyncio.sleep(0.1)  # Adjust sleep time as needed
-        c += 1
-        logging.debug(f'End of loop: {c}')
-
+    
     poller.stop()
+    logging.info("Poller stopped.")
+
+
+
 
 
 
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        logging.info("KeyboardInterrupt received, exiting...")
-    except Exception as e:
-        logging.error(f"An error occurred: {e}")
-    finally:
-        logging.info("Exiting main program.")
-        sys.exit(0)
+    asyncio.run(main())
