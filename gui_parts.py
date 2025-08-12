@@ -92,10 +92,7 @@ class AttributeRow(QtWidgets.QWidget):
         elif value is None:
             self.value.setText('None')
         # this is to potentially overwrite the tango state color
-        if color:
-            _color = color
-        else:
-            _color = _TangoStateColors[state]
+        _color = color if color else _TangoStateColors[state]
         if self.widgetStyle == 'frame' and state is not None:
             color = attrDescriptor[self.attrType]['color']
             self.value.setStyleSheet('''QLabel {
