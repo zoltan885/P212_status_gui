@@ -16,9 +16,9 @@ from current_state import OverwritingSingleSlotQueue
 
 
 
-CRED_PATH = "/home/p212user/zoltan/P212_status_gui/credits.creds"
+CRED_PATH = "/home/hegedues/prog/P212_status_gui/credits.creds"
 USE_GZIP = True  # Set to True to enable gzip compression
-VERBOSE = True
+VERBOSE = False
 
 
 class UpdatePublisher:
@@ -35,7 +35,18 @@ class UpdatePublisher:
         self.t0 = time.time()
         self.last_publish_time = 0
 
-
+    async def _init_nats_publisher(self):
+        logging.info("Initializing NATS connection...")
+        jwt, seed = parse_creds(CRED_PATH)
+        kp = nkeys.from_seed(seed.encode())
+        self.nc = NATS()
+        
+        await self.nc.connect(
+            servers=["tls://connect.ngs.global:4222"],
+            user_jwt_cb=lambda: jwt.encode("utf-8"),
+            signature_cb=lambda nonce: base64.b64encode(kp.sign(nonce.encode())),
+            name="jwt-python-publisher",
+        )
 
     async def setup(self):
         """
@@ -45,11 +56,9 @@ class UpdatePublisher:
         asyncio.create_task(self._publish_updates(self.topic))
         self.state = "ready"
 
-    
     @property
     def publish_time_constant(self):
         return self._publish_time_constant
-    
     @publish_time_constant.setter
     def publish_time_constant(self, value):
         try:
@@ -90,12 +99,9 @@ class UpdatePublisher:
                     await self.nc.publish(topic, encoded_data)
                     logging.info(f"Published update to {topic} @ {time.time() - self.t0:.2f} s, dt = {1000*(time.time() - self.last_publish_time):.2f} ms")
                     self.last_publish_time = time.time()
-            
             elapsed = time.monotonic() - start
             sleep_time = max(0, self._publish_time_constant - elapsed)
-            
             await asyncio.sleep(sleep_time)
-
 
     def _encode_data(self, data: dict, use_gzip: bool) -> bytes:
         bytedata = json.dumps(data).encode("utf-8")
@@ -104,18 +110,6 @@ class UpdatePublisher:
         else:
             return bytedata
 
-    async def _init_nats_publisher(self):
-        logging.info("Initializing NATS connection...")
-        jwt, seed = parse_creds(CRED_PATH)
-        kp = nkeys.from_seed(seed.encode())
-        self.nc = NATS()
-        
-        await self.nc.connect(
-            servers=["tls://connect.ngs.global:4222"],
-            user_jwt_cb=lambda: jwt.encode("utf-8"),
-            signature_cb=lambda nonce: base64.b64encode(kp.sign(nonce.encode())),
-            name="jwt-python-publisher",
-        )
 
 
 class SnapshotWorker:
@@ -163,7 +157,7 @@ class SnapshotWorker:
         snapshot = None
         while not snapshot:
             try:
-                snapshot = self.snapshot_queue.get(timeout=1)
+                snapshot = await self.snapshot_queue.get()
             except (Empty, TimeoutError):
                 await asyncio.sleep(1)
 
@@ -181,7 +175,7 @@ class SnapshotWorker:
         snapshot = None
         while not snapshot:
             try:
-                snapshot = self.snapshot_queue.get(timeout=1)
+                snapshot = await self.snapshot_queue.get()
             except Empty:
                 await asyncio.sleep(1)  
         
@@ -296,5 +290,5 @@ async def test_snapshot_request_handler():
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     #asyncio.run(test_update_publisher())
-    asyncio.run(test_snapshot_worker())
-    #asyncio.run(test_snapshot_request_handler())
+    #asyncio.run(test_snapshot_worker())
+    asyncio.run(test_snapshot_request_handler())

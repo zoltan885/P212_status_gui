@@ -133,7 +133,7 @@ class CurrentStateMonitor:
         self.report_thread.daemon = True  # to ensure the thread will not block program exit
         self.report_thread.start()
 
-        self.snapshot_thread = threading.Thread(target=self._snapsot_worker)
+        self.snapshot_thread = threading.Thread(target=self._snapshot_worker)
         self.snapshot_thread.daemon = True  # to ensure the thread will not block program exit
         self.snapshot_thread.start()
 
@@ -227,7 +227,7 @@ class CurrentStateMonitor:
             while not self.in_queue.empty():
                 try:
                     msg = self.in_queue.get(timeout=0.01)
-                    #logging.info(f"Got message: {msg}")
+                    logging.info(f"Got message: {msg}")
                     ID = msg['ID']
                     value = msg['value']
                     state = msg['state']
@@ -343,7 +343,7 @@ class CurrentStateMonitor:
                 #logging.debug('Report worker is paused')
             time.sleep(self.report_interval)
 
-    def _snapsot_worker(self):
+    def _snapshot_worker(self):
         """
         Worker method to periodically create and send snapshots of the current state.
         

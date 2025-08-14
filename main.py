@@ -331,8 +331,12 @@ def exitHandler(pollers):
         p.stop()
     print('BYE')
 
+def _startlog():
+    logging.info(f'\n\nmain.py started {time.asctime()}')
+
 
 def main():
+    _startlog()
     app = QtWidgets.QApplication(sys.argv)
     main = MainWindow()
 

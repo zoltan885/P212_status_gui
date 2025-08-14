@@ -20,8 +20,11 @@ from nats.aio.client import Client as NATS
 from load_credits import parse_creds
 from poller import Poller
 from current_state import CurrentStateMonitor, OverwritingSingleSlotQueue
+from current_state_async import CurrentStateMonitorAsync, AsyncOverwritingSingleSlotQueue
 from publisher_simple import UpdatePublisher, SnapshotWorker
 #from status_bar import Ui_Widget  # this should be changed
+
+from poller_simulator import AsyncSensorSimulator, SENSOR_CONFIG
 
 import importlib
 if len(sys.argv) > 1:
@@ -46,7 +49,7 @@ consoleHandler.setFormatter(logFormatter)
 rootLogger.addHandler(consoleHandler)
 
 
-CRED_PATH = "/home/p212user/zoltan/P212_status_gui/credits.creds"
+CRED_PATH = "/home/hegedues/prog/P212_status_gui/credits.creds"
 USE_GZIP = True  # Set to True to enable gzip compression
 PUBLSIH_SNAPSHOT = False  # Set to True to publish full snapshot on startup
 
@@ -138,7 +141,43 @@ async def main():
     await publisher.setup()
     publisher.publish_event.set()
 
+    snapshot_worker = SnapshotWorker(snapshot_queue, topic="sensors.snapshot", request_topic="sensors.snapshot.request")
+    await snapshot_worker.setup()
+    snapshot_worker.publish_period = 3
+    snapshot_worker.publish_periodic = True
 
+    while True:
+        try:
+            logging.debug('Comm queue size: %d', comm_queue.qsize())
+            await asyncio.sleep(0.1)  # Keep the event loop running
+        except asyncio.CancelledError:
+            logging.info("KeyboardInterrupt received, exiting...")
+            break
+        except Exception as e:
+            logging.error(f"An error occurred: {e}")
+            break
+    
+    poller.stop()
+    logging.info("Poller stopped.")
+
+
+
+async def main_simulated():
+    comm_queue = Queue(20000)
+    update_queue = Queue(1000)
+    snapshot_queue = AsyncOverwritingSingleSlotQueue()
+    
+    poller = AsyncSensorSimulator(SENSOR_CONFIG, comm_queue)
+    await poller.start()
+
+    CSM = CurrentStateMonitorAsync(in_queue=comm_queue, update_queue=update_queue, snapshot_queue=snapshot_queue)
+    CSM.start_self_report()
+
+    time.sleep(0.5)   # wait for poller to start and produce some data
+
+    publisher = UpdatePublisher(update_queue, topic="sensors.updates")
+    await publisher.setup()
+    publisher.publish_event.set()
 
     snapshot_worker = SnapshotWorker(snapshot_queue, topic="sensors.snapshot", request_topic="sensors.snapshot.request")
     await snapshot_worker.setup()
@@ -162,7 +201,5 @@ async def main():
 
 
 
-
-
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main_simulated())
