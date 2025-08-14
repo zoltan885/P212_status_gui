@@ -12,13 +12,23 @@ import qasync  # asyncio + Qt integration
 NOISE = 0.05  # ±5% noise
 JUMP_TIME = 5  # seconds for jump
 
-SENSOR_CONFIG = {
-        "sensor1": {"poll_time": 0.3, "noise": True, "value": 1e-5, "jump": False, "jump_step": 1e-6},
-        "sensor2": {"poll_time": 0.5, "noise": False, "value": 1.0, "jump": True, "jump_step": 0.1},
-        "sensor3": {"poll_time": 0.4, "noise": True, "value": 5.0, "jump": True, "jump_step": 0.5},
-        "sensor4": {"poll_time": 0.3, "noise": False, "value": 10.0, "jump": False, "jump_step": 0.2},
-        "sensor5": {"poll_time": 0.25, "noise": True, "value": 2.5, "jump": True, "jump_step": 1},
+SENSOR_CONFIG = {}
+for i in range(1, 1001):
+    SENSOR_CONFIG[f"sensor{i}"] = {
+        "poll_time": round(random.uniform(0.2, 0.6), 2),         # 0.2 to 0.6 seconds
+        "noise": random.choice([True, False]),
+        "value": round(random.uniform(1e-6, 20.0), 6),           # 1e-6 to 20.0
+        "jump": random.choice([True, False]),
+        "jump_step": round(random.uniform(0.01, 2.0), 3)         # 0.01 to 2.0
     }
+
+# SENSOR_CONFIG = {
+#         "sensor1": {"poll_time": 0.3, "noise": True, "value": 1e-5, "jump": False, "jump_step": 1e-6},
+#         "sensor2": {"poll_time": 0.5, "noise": False, "value": 1.0, "jump": True, "jump_step": 0.1},
+#         "sensor3": {"poll_time": 0.4, "noise": True, "value": 5.0, "jump": True, "jump_step": 0.5},
+#         "sensor4": {"poll_time": 0.3, "noise": False, "value": 10.0, "jump": False, "jump_step": 0.2},
+#         "sensor5": {"poll_time": 0.25, "noise": True, "value": 2.5, "jump": True, "jump_step": 1},
+#     }
 
 
 class AsyncSensorSimulator:
