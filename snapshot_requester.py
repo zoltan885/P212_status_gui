@@ -8,7 +8,7 @@ from nats.aio.client import Client as NATS
 from load_credits import parse_creds
 
 
-CRED_PATH = "/home/p212user/zoltan/P212_status_gui/credits.creds"
+CRED_PATH = "/home/hegedues/prog/nats/NGS-Default-CLI.creds"
 USE_GZIP = True  # Set to True to enable gzip compression
 
 def is_gzipped(data: bytes) -> bool:

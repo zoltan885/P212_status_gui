@@ -191,16 +191,18 @@ ATOL = 1e-4  # absolute tolerance for float comparison
 
 DEBUG = False  # set to True to enable debug logging
 
-
+# for now, I'm gonna mess this up by simply adding one more outout queue (log_queue), which will get the same output messages as the update queue
 class CurrentStateMonitorAsync:
 
     def __init__(self,
                  in_queue: Queue = None,
                  update_queue: Queue = None,
-                 snapshot_queue: asyncio.LifoQueue | Queue = None):
+                 snapshot_queue: asyncio.LifoQueue | Queue = None,
+                 log_queue: Queue = None):
         self.in_queue = in_queue or asyncio.Queue()
         self.update_queue = update_queue or asyncio.Queue()
         self.snapshot_queue = snapshot_queue or asyncio.Queue()
+        self.log_queue = log_queue or asyncio.Queue()
 
         self.filtered_messages = deque([], maxlen=10000)
         self.state = {}
@@ -318,6 +320,8 @@ class CurrentStateMonitorAsync:
                 while len(self.filtered_messages) > 0:
                     msg = self.filtered_messages.popleft()
                     await self.update_queue.put(msg)
+                    if self.log_queue is not None:
+                        await self.log_queue.put(msg)
             else:
                 logging.error('No update queue set, cannot send message')
 

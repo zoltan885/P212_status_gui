@@ -157,20 +157,20 @@ class MultiSensorPlotter(QtWidgets.QMainWindow):
     async def run(self):
         """Consume queue and update all subplots."""
         while True:
-            msg = await self.queue.get()
+            data = await self.queue.get()
 
-            for sensor_name, data in msg.items():
-                t = data["timestamp"]
-                v = data["value"]
+            t = data["timestamp"]
+            v = data["value"]
+            sensor_name = data["name"]
 
-                buf = self.data_buffers[sensor_name]
-                buf.append((t, v))
+            buf = self.data_buffers[sensor_name]
+            buf.append((t, v))
 
-                times, values = zip(*buf)
-                t0 = times[0]  # normalize to zero
-                self.curves[sensor_name].setData(
-                    [ti - t0 for ti in times], values
-                )
+            times, values = zip(*buf)
+            t0 = times[0]  # normalize to zero
+            self.curves[sensor_name].setData(
+                [ti - t0 for ti in times], values
+            )
 
 
 # Example usage
@@ -200,7 +200,7 @@ async def main_plot():
     loop = qasync.QEventLoop(app)
     asyncio.set_event_loop(loop)
 
-    config = SENSOR_CONFIG
+    config = dict(list(SENSOR_CONFIG.items())[:8]) # Limit to first 8 sensors for plotting
 
     # Create an output queue for sensor data
     output_queue = asyncio.Queue()
@@ -218,4 +218,4 @@ async def main_plot():
         loop.run_forever()
 
 if __name__ == "__main__":
-    asyncio.run(main_simple())
+    asyncio.run(main_plot())

@@ -11,6 +11,7 @@ from poller_async import AsyncPoller
 from poller_simulator import AsyncSensorSimulator, SENSOR_CONFIG
 from current_state_async import CurrentStateMonitorAsync, OverwritingDualModeQueue
 from publisher_simple import UpdatePublisher, SnapshotWorker
+from db_integration import DatabaseWriter
 
 import importlib
 if len(sys.argv) > 1:
@@ -23,11 +24,11 @@ else:
 logFormatter = logging.Formatter(
     "%(asctime)-25.25s %(threadName)-12.12s %(name)-25.24s %(levelname)-10.10s %(message)s")
 rootLogger = logging.getLogger()
-rootLogger.setLevel(logging.INFO)
+rootLogger.setLevel(logging.DEBUG)
 
-consoleHandler = logging.StreamHandler(sys.stdout)
-consoleHandler.setFormatter(logFormatter)
-rootLogger.addHandler(consoleHandler)
+#consoleHandler = logging.StreamHandler(sys.stdout)
+#consoleHandler.setFormatter(logFormatter)
+#rootLogger.addHandler(consoleHandler)
 
 
 
@@ -37,6 +38,7 @@ SIMULATE = True
 async def main():
     queue = asyncio.Queue()
     if SIMULATE:
+        logging.info("Using AsyncSensorSimulator")
         poller = AsyncSensorSimulator(SENSOR_CONFIG, queue)
     else:
         # Use the actual AsyncPoller if not simulating
@@ -45,6 +47,7 @@ async def main():
 
     update_queue = asyncio.Queue()
     snapshot_queue = asyncio.Queue()# OverwritingDualModeQueue()
+    log_queue = asyncio.Queue()
     
     if not SIMULATE:
         for tab in conf.grouping['tabs']:
@@ -60,7 +63,8 @@ async def main():
     CSMA = CurrentStateMonitorAsync(
         in_queue=queue, 
         update_queue=update_queue, 
-        snapshot_queue=snapshot_queue
+        snapshot_queue=snapshot_queue,
+        log_queue=log_queue
     )
 
     publisher = UpdatePublisher(update_queue, topic="sensors.updates")
@@ -78,6 +82,10 @@ async def main():
     await CSMA.start_update()
     #await CSMA.start_snapshot()
     print("CurrentStateMonitorAsync started...")
+
+    DBW = DatabaseWriter(in_queue=log_queue)
+    print("DatabaseWriter starting...")
+    await DBW.run()
     
     sleep_time = 200
     print(f"Sleeping for {sleep_time} seconds...")

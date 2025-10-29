@@ -22,8 +22,8 @@ class AsyncPoller:
     """
     Async Poller with sync/async API compatibility.
 
-    You can call add_attr(), start(), pause(), resume(), stop()
-    from either synchronous or asynchronous code.
+    add_attr(), start(), pause(), resume(), stop()
+    are available from either synchronous or asynchronous code.
     """
 
     def __init__(self, queue: asyncio.Queue):
