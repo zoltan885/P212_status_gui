@@ -36,7 +36,13 @@ from PyQt5.QtWidgets import (
 from collections import defaultdict
 import utilities
 from _settings import _defaults
-import configuration as conf
+import importlib
+if len(sys.argv) > 1:
+    conf_name = sys.argv[1]
+    conf = importlib.import_module(conf_name)
+    logging.info(f'{sys.argv[1]} imported')
+else:
+    import configuration as conf
 from gui_parts import AttributeRow, PropertyRow
 from poller import Poller
 VERSION = {'major': 1, 'minor': 0, 'patch': 0}
