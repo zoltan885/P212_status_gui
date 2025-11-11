@@ -256,6 +256,17 @@ class SensorRegistry:
     def tango_groups(self):
         return self.get_groups()['Tango']
 
+    def get_tango_group_sensors(self, address: str) -> List[Sensor]:
+        """Return list of Sensor objects in the specified Tango group."""
+        sensor_ids = self._groups["Tango"].get(address, [])
+        return [self._sensors[sid] for sid in sensor_ids if sid in self._sensors]
+
+    def get_tango_group_attributes(self, address: str) -> List[str]:
+        """Return list of attribute names in the specified Tango group."""
+        sensors = self.get_tango_group_sensors(address)
+        attributes = [getattr(s, 'attribute') for s in sensors if hasattr(s, 'attribute')]
+        return attributes
+
     def get_tine_group_sensors(self, group_key: str | Tuple[str, str, str]) -> List[Sensor]:
         """Return list of Sensor objects in the specified Tine group."""
         if isinstance(group_key, str):
@@ -406,6 +417,12 @@ async def main():
             'attribute': 'temperature',
             'display_name': 'TG Test 2 Temperature'
         },
+        {
+            'type': 'Tango',
+            'address': 'sys/tg_test/1',
+            'attribute': 'humanity',
+            'display_name': 'Humanity Sensor'
+        },
     ]
     await registry.register_many(tango_sensors)
     print("After registering more Tango sensors:")
@@ -415,6 +432,13 @@ async def main():
     for addr, ids in registry.tango_groups.items():
         print(f"Address {addr}: Sensor IDs {ids}")
     
+    print('Tango group sensors for sys/tg_test/1:')
+    tango_group_sensors = registry.get_tango_group_sensors('sys/tg_test/1')
+    for s in tango_group_sensors:
+        print(s)
+    print('Tango group attributes for sys/tg_test/2:')
+    tango_group_attrs = registry.get_tango_group_attributes('sys/tg_test/2')
+    print(tango_group_attrs)
 
 
 if __name__ == "__main__":

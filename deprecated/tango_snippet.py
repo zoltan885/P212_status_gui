@@ -190,33 +190,33 @@ if __name__ == "__main__":
 
 
 
-async def main9():
-    queue = asyncio.Queue()
-    devices = {
-        'hasep21eh2:10000/p21/motor/eh2_u1.01': ["Position"],
-        'hasep21eh2:10000/p21/motor/eh2_u1.02': ["Position", 'Acceleration'],
-    }
+# async def main9():
+#     queue = asyncio.Queue()
+#     devices = {
+#         'hasep21eh2:10000/p21/motor/eh2_u1.01': ["Position"],
+#         'hasep21eh2:10000/p21/motor/eh2_u1.02': ["Position", 'Acceleration'],
+#     }
 
-    # create a polling task per device
-    tasks = [
-        asyncio.create_task(poll_device(name, attrs, queue, 1))
-        for name, attrs in devices.items()
-    ]
+#     # create a polling task per device
+#     tasks = [
+#         asyncio.create_task(poll_device(name, attrs, queue, 1))
+#         for name, attrs in devices.items()
+#     ]
 
-    while True:
-        mess = await queue.get()
-        print(f"Queue received:\n{mess}")
-        queue.task_done()
+#     while True:
+#         mess = await queue.get()
+#         print(f"Queue received:\n{mess}")
+#         queue.task_done()
 
-    # optionally: handle graceful cancellation
-    try:
-        await asyncio.gather(*tasks)
-    except asyncio.CancelledError:
-        print("Polling stopped.")
+#     # optionally: handle graceful cancellation
+#     try:
+#         await asyncio.gather(*tasks)
+#     except asyncio.CancelledError:
+#         print("Polling stopped.")
 
 
-if __name__ == "__main__":
-    asyncio.run(mainA())
+# if __name__ == "__main__":
+#     asyncio.run(mainA())
 
 
 

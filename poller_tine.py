@@ -3,7 +3,7 @@
 #!/usr/bin/env python3
 import logging
 import sys
-import tango
+import PyTine as tine
 import asyncio
 import threading
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 GRACE = 1  # seconds
 TEST = False
 
-class AsyncTangoPoller():
+class AsyncTinePoller():
     def __init__(self, outqueue: asyncio.Queue, registry: SensorRegistry):
         self.startEvent = asyncio.Event()
         self.pauseEvent = asyncio.Event()
@@ -100,22 +100,22 @@ class AsyncTangoPoller():
     
     def _add_all_registry_entries(self,):
         '''
-        adds all registered Tango addresses from the SensorRegistry to the polling group
+        adds all registered Tine addresses from the SensorRegistry to the polling group
         takes care of starting the process if it is not running yet
         Modifying the registry while polling is ongoing is not yet handled. The notification queue is created, but not yet used.
         '''
-        logger.info('Adding all Tango addresses from registry to poller')
-        logger.debug(f'Current Tango groups in registry: {self.registry.tango_groups}')
-        for tango_group_ID, sensor_ID_list in self.registry.tango_groups.items():
-            logger.debug(f'Processing tine_group_ID: {tango_group_ID} with sensors: {sensor_ID_list}')
-            if tango_group_ID in self.tasks:
-                logger.info(f'Task with tango_group_ID {tango_group_ID} already exists')
+        logger.info('Adding all Tine addresses from registry to poller')
+        logger.debug(f'Current tine groups in registry: {self.registry.tine_groups}')
+        for tine_group_ID, sensor_ID_list in self.registry.tine_groups.items():
+            logger.debug(f'Processing tine_group_ID: {tine_group_ID} with sensors: {sensor_ID_list}')
+            if tine_group_ID in self.tasks:
+                logger.info(f'Task with tine_group_ID {tine_group_ID} already exists')
                 continue
             task = asyncio.create_task(
                 self.query_process(sensor_ID_list)
             )
-            self.tasks[tango_group_ID] = task
-            logger.info(f'Created polling task for {tango_group_ID=}')
+            self.tasks[tine_group_ID] = task
+            logger.info(f'Created polling task for {tine_group_ID=}')
         logger.debug(f'Total polling tasks: {len(self.tasks)}')
 
 
@@ -123,8 +123,6 @@ class AsyncTangoPoller():
         logger.debug(f'Starting query_process for sensor_ID_list: {sensor_ID_list}')
         # determine context/server/property from the first sensor ID
         sensor = self.registry.get_sensor_by_id(sensor_ID_list[0])
-        device_proxy = tango.DeviceProxy(sensor.address)
-        
         context, server, property = getattr(sensor, 'context'), getattr(sensor, 'server'), getattr(sensor, 'property')
         # get the name of all devices in this tine group
         dev_names_to_query = [getattr(self.registry.get_sensor_by_id(sid), 'device') for sid in sensor_ID_list]
@@ -151,15 +149,16 @@ class AsyncTangoPoller():
                     continue
                 for sID, idx in sensor_ID_list_idx_map.items():
                     dct = {
+                        'name': f'{context}/{server}/{self.registry.get_sensor_by_id(sID).device}',  # this field is for easier identification, should be redundant
                         'ID': sID,
                         'timestamp': all_values_from_tine_server['timestamp'],
                         'value': all_values_from_tine_server['data'][idx],
-                        'status': all_values_from_tine_server['status'],
+                        'state': all_values_from_tine_server['status'],
                     }
                     await self.queue.put(dct)
                 await asyncio.sleep(self._grace)
             except asyncio.CancelledError:
-                logger.debug(f'query_process2 for sensor_ID_list {sensor_ID_list} cancelled.')
+                logger.debug(f'query_process for sensor_ID_list {sensor_ID_list} cancelled.')
                 raise
 
 
