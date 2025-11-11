@@ -11,7 +11,7 @@ from poller_async import AsyncPoller
 from poller_simulator import AsyncSensorSimulator, SENSOR_CONFIG
 from current_state_async import CurrentStateMonitorAsync, OverwritingDualModeQueue
 from publisher_simple import UpdatePublisher, SnapshotWorker
-from db_integration import DatabaseWriter
+from database_writer import DatabaseWriter
 
 import importlib
 if len(sys.argv) > 1:
@@ -33,7 +33,7 @@ rootLogger.setLevel(logging.DEBUG)
 
 
 
-SIMULATE = True
+SIMULATE = False
 
 async def main():
     queue = asyncio.Queue()

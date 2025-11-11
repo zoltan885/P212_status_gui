@@ -8,7 +8,7 @@ import utilities
 
 log = logging.getLogger(__name__)
 
-GRACE = 0.1
+GRACE = 1
 LOGTIME = 1
 DEQUEUE_MAX_SIZE = 2000
 VERBOSE = False
@@ -148,6 +148,7 @@ class AsyncPoller:
 
     async def _start_async(self):
         self.startEvent.set()
+        self.pauseEvent.clear()  # could be used for resuming
 
     async def _pause_async(self):
         self.pauseEvent.set()

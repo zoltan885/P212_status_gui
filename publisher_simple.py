@@ -16,7 +16,7 @@ from current_state import OverwritingSingleSlotQueue
 
 
 
-CRED_PATH = "/home/hegedues/prog/P212_status_gui/credits.creds"
+CRED_PATH = "./credits.creds"
 USE_GZIP = True  # Set to True to enable gzip compression
 VERBOSE = False
 

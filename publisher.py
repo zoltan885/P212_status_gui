@@ -29,7 +29,7 @@ from load_credits import parse_creds
 
 
 
-CRED_PATH = "/home/p212user/zoltan/P212_status_gui/credits.creds"
+CRED_PATH = "./credits.creds"
 USE_GZIP = True  # Set to True to enable gzip compression
 PUBLSIH_SNAPSHOT = False  # Set to True to publish full snapshot on startup
 

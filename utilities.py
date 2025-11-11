@@ -6,6 +6,8 @@ Created on Thu May 23 09:37:10 2024
 @author: hegedues
 """
 import numpy as np
+from base_classes import TineGroup
+from dataclasses import dataclass
 
 # Si lattice parameter at RT
 ASIRT = 5.43102  # @ 22.5 C
@@ -15,22 +17,26 @@ def _check_configuration(config_file):
     pass
 
 
-def create_ID(configuration_dct):
+def create_ID(conf):
     '''
     creates an ID from the configuration dictionary
     '''
     # attributes
-    if 'dev' in configuration_dct.keys():
-        ID = f"attr::{configuration_dct['dev']}/{configuration_dct['attr']}"
+    if isinstance(conf, TineGroup):
+        print(f'This is a TINE group: {conf}')
+        ID = f"tine::{conf.context}/{conf.server}/{conf.property}"
         return ID
-    if 'tine_dev' in configuration_dct.keys():
-        ID = f"tine::{configuration_dct['tine_dev']}/{configuration_dct['tine_property']}"
+    if 'dev' in conf.keys():
+        ID = f"attr::{conf['dev']}/{conf['attr']}"
         return ID
-    if 'property' in configuration_dct.keys():
-        ID = f"prop::{configuration_dct['host']}:{configuration_dct['property'][0]}/{configuration_dct['property'][1]}"
+    if 'tine_dev' in conf.keys():
+        ID = f"tine::{conf['tine_dev']}/{conf['tine_property']}"
         return ID
-    if 'server' in configuration_dct.keys():
-        ID = f"serv::{configuration_dct['server']}"
+    if 'property' in conf.keys():
+        ID = f"prop::{conf['host']}:{conf['property'][0]}/{conf['property'][1]}"
+        return ID
+    if 'server' in conf.keys():
+        ID = f"serv::{conf['server']}"
         return ID
 
 
