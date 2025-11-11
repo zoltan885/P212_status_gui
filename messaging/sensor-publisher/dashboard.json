@@ -1,0 +1,73 @@
+{
+  "id": null,
+  "title": "NATS + Sensor Metrics",
+  "panels": [
+    {
+      "type": "graph",
+      "title": "NATS Connections",
+      "targets": [
+        {
+          "expr": "nats_connections",
+          "legendFormat": "{{client}}",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {"x":0,"y":0,"w":12,"h":6}
+    },
+    {
+      "type": "graph",
+      "title": "JetStream Messages",
+      "targets": [
+        {
+          "expr": "nats_js_stream_msgs_total",
+          "legendFormat": "{{stream}}",
+          "refId": "B"
+        }
+      ],
+      "gridPos": {"x":12,"y":0,"w":12,"h":6}
+    },
+    {
+      "type": "graph",
+      "title": "Sensor Temperature",
+      "targets": [
+        {
+          "expr": "sensor_temperature",
+          "legendFormat": "{{sensor_id}}",
+          "refId": "C"
+        }
+      ],
+      "gridPos": {"x":0,"y":6,"w":12,"h":6}
+    },
+    {
+      "type": "graph",
+      "title": "Sensor Humidity",
+      "targets": [
+        {
+          "expr": "sensor_humidity",
+          "legendFormat": "{{sensor_id}}",
+          "refId": "D"
+        }
+      ],
+      "gridPos": {"x":12,"y":6,"w":12,"h":6}
+    },
+    {
+      "type": "table",
+      "title": "KV Bucket Stats",
+      "targets": [
+        {
+          "expr": "nats_js_kv_keys",
+          "legendFormat": "{{bucket}}",
+          "refId": "E"
+        }
+      ],
+      "gridPos": {"x":0,"y":12,"w":24,"h":6}
+    }
+  ],
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "5s",
+  "time": {
+    "from": "now-5m",
+    "to": "now"
+  }
+}

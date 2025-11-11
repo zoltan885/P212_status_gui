@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+message SensorData {
+  int64 timestamp = 1;
+  string sensor_name = 2;
+  string sensor_address = 3;
+  string status = 4;
+  double value = 5;
+  map<string, string> extra = 6;
+}
+
+message SensorHeartbeat {
+  string name = 1;
+  int64 last_seen = 2;  // optional
+}
+
+message SensorBatch {
+  int64 timestamp = 1;
+  repeated SensorData updates = 2;
+  repeated SensorHeartbeat heartbeats = 3;
+}
+
+//
+// Lightweight config metadata
+//
+message SensorConfigInfo {
+  string version = 1;        // hash or semantic version, e.g. "v1.3.2" or "hash:9f8a3b"
+  int64 timestamp = 2;       // Unix time when config was generated
+  string description = 3;    // optional human-readable text
+}
+
+//
+// Full hierarchical configuration
+//
+message SensorInfo {
+  string name = 1;
+  string address = 2;
+  string unit = 3;
+  string description = 4;
+}
+
+message SensorGroup {
+  string name = 1;                       // group name
+  repeated SensorInfo sensors = 2;       // sensors directly in this group
+  repeated SensorGroup subgroups = 3;    // nested groups
+}
+
+message SensorConfig {
+  string version = 1;                    // must match the version in SensorConfigInfo
+  int64 timestamp = 2;                   // same timestamp for traceability
+  repeated SensorGroup groups = 3;       // top-level groups
+}
