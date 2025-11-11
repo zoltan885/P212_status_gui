@@ -6,6 +6,7 @@ import sys
 import PyTine as tine
 import asyncio
 import threading
+from enum import Enum
 
 from base_classes import AsyncPoller, TineAddress, TineGroup, TineGroupCollection
 import utilities

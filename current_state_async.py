@@ -195,9 +195,9 @@ DEBUG = False  # set to True to enable debug logging
 class CurrentStateMonitorAsync:
 
     def __init__(self,
-                 in_queue: Queue = None,
-                 update_queue: Queue = None,
-                 snapshot_queue: asyncio.LifoQueue | Queue = None,
+                 in_queue: Queue,
+                 update_queue: Queue,
+                 snapshot_queue: asyncio.LifoQueue | Queue,
                  log_queue: Queue = None):
         self.in_queue = in_queue or asyncio.Queue()
         self.update_queue = update_queue or asyncio.Queue()

@@ -148,6 +148,21 @@ class SensorRegistry:
         self._by_key[key] = sid
         self._update_groups(sensor)
         self._version += 1
+
+        # if this was a Tango sensor, check if the tango group already has 'State' in it, if not add it
+        # this we need later to monitor the state of all tango devices
+        if sensor.type.capitalize() == "Tango":
+            addr = sensor.address
+            tango_group_sensors = self.get_tango_group_sensors(addr)
+            attributes_in_group = [getattr(s, 'attribute') for s in tango_group_sensors if hasattr(s, 'attribute')]
+            if 'State' not in attributes_in_group:
+                state_sensor_cfg = {
+                    'type': 'Tango',
+                    'address': addr,
+                    'attribute': 'State',
+                    'display_name': f'{addr} State'
+                }
+                await self.register_sensor(state_sensor_cfg)
         return sid
 
     async def register_many(self, cfgs: List[dict]) -> List[str]:

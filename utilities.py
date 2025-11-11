@@ -8,6 +8,8 @@ Created on Thu May 23 09:37:10 2024
 import numpy as np
 from base_classes import TineGroup
 from dataclasses import dataclass
+import asyncio
+import logging
 
 # Si lattice parameter at RT
 ASIRT = 5.43102  # @ 22.5 C
@@ -64,3 +66,13 @@ def AngleToE(angle, unit='urad'):
         return 12.39842/(np.sin(1e-6*angle)*2*dSi111)
     if unit == 'degree':
         return 12.39842/(np.sin(angle/180*np.pi)*2*dSi111)
+
+
+
+
+
+async def queue_consumer(queue: asyncio.Queue):
+    while True:
+        msg = await queue.get()
+        logging.info(f"Queue Consumer received: {msg}")
+        queue.task_done()

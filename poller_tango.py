@@ -195,7 +195,7 @@ class AsyncTangoPoller():
         for sID in sensor_ID_list:
             s = self.registry.get_sensor_by_id(sID)
             attrs[s.attribute] = sID
-        print(f'Starting polling for Tango device {address} with attributes {attrs}')
+        logging.debug(f'Starting polling for Tango device {address} with attributes {attrs}')
         interval = DEFAULT_POLL_INTERVAL
         await self.startEvent.wait()
         while not self.stopEvent.is_set():
@@ -209,12 +209,13 @@ class AsyncTangoPoller():
                     interval = min(MAX_BACKOFF, interval * 2)
                     await asyncio.sleep(interval)
                     continue
-                if 'State' not in [attr.name for attr in result]:
-                    state = 'Unknown'
-                    logger.warning(f"Device {address} did not return 'State' attribute.")
-                else:
-                    state_attr = next(attr for attr in result if attr.name == 'State')
-                    state = str(state_attr.value)
+                state = 'Unknown'
+                if 'State' in [attr.name for attr in result]:
+                    state = [av.value for av in result if av.name == 'State'][0]
+                    state = str(state)
+                    #state_attr = getattr(result, 'State', 'Unknown')
+                    #state = str(state_attr)
+                    #logger.warning(f"Device {address} state: {state}")
                 for attr in result:
                     # await self.outqueue.put({
                     #     "device": address,
@@ -227,7 +228,7 @@ class AsyncTangoPoller():
                         'ID': attrs[attr.name],
                         'timestamp': self._timeval_to_unix(attr.time),
                         'value': attr.value,
-                        'state': state
+                        'state': state,
                     })
 
                 # Dynamic adjustment of poll interval based on response time
@@ -235,6 +236,7 @@ class AsyncTangoPoller():
                     interval = min(MAX_BACKOFF, interval * 1.5)  # backoff for slow devices
                 else:
                     interval = DEFAULT_POLL_INTERVAL
+                logging.debug(f'Interval adjusted to {interval} seconds based on response time {duration} seconds')
 
             except tango.DevFailed as e:
                 print(f"[{address}] Tango error: {e}")
@@ -320,7 +322,7 @@ sensors2 = [{'type': 'Tango',
         'address': f'hasep21eh2:10000/p21/motor/eh2_u1.{d:02d}',
         'attribute': attr,
         'display_name': f'eh2_u1.{d:02d} Position'
-    } for d in range(1, 17) for attr in attrs_VME]
+    } for d in range(1, 2) for attr in attrs_VME]
 
 
 
@@ -350,13 +352,13 @@ async def async_main():
     poller = AsyncTangoPoller(outqueue, registry)
 
     await poller.start()
-    await asyncio.sleep(5)  # Run for 5 seconds for testing
+    await asyncio.sleep(10)  # Run for 5 seconds for testing
     await poller.pause()
     logging.info('Poller paused for 5 seconds') 
     await asyncio.sleep(5)
     await poller.resume()
     logging.info('Poller resumed for another 5 seconds')
-    await asyncio.sleep(5)
+    await asyncio.sleep(10)
     await poller.stop()
     
 
