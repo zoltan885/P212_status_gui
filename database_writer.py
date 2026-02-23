@@ -7,18 +7,21 @@ import random
 import time
 import signal
 import dataset
+from datetime import datetime, timezone
+import dateutil.parser
+import uuid
 
 logFormatter = logging.Formatter(
     "%(asctime)-25.25s %(threadName)-12.12s %(name)-25.24s %(levelname)-10.10s %(message)s")
 rootLogger = logging.getLogger()
-rootLogger.setLevel(logging.INFO)
+rootLogger.setLevel(logging.DEBUG)
 
 consoleHandler = logging.StreamHandler(sys.stdout)
 consoleHandler.setFormatter(logFormatter)
 rootLogger.addHandler(consoleHandler)
 
 
-DB_URL = "sqlite:///sensors.db"
+DB_URL = "sqlite:///sensors.db" # Later: "postgresql+psycopg2://myuser:mypass@localhost/mydb"
 TABLE_NAME = "measurements"
 MAINTENANCE_INTERVAL = 10 # 300
 VACUUM_INTERVAL = 30 # 7200
@@ -26,25 +29,36 @@ DB_PATH = "sensors.db"
 BATCH_SIZE = 200
 FLUSH_INTERVAL = 1.0  # seconds
 
+def utcnow():
+    return datetime.now(timezone.utc)
+
+
+
+
+
+
 class DatabaseWriter():
-    def __init__(self, db_url=DB_URL, table_name=TABLE_NAME, in_queue=None):
+    def __init__(self, in_queue, db_url=None, table_name=None):
         logging.debug("Initializing DatabaseWriter...")
-        self.db = dataset.connect(db_url)
+        self.db_url = db_url or DB_URL  # use default if None, default could come from config later
+        self.table_name = table_name or TABLE_NAME
+        self.db = dataset.connect(self.db_url)
+        self.db_backend = self.db.engine.url.get_backend_name()
         logging.debug("Database connected.")
-        self.attr_table_name = 'attr_'+table_name
-        self.tine_table_name = 'tine_'+table_name
-        self.property_table_name = 'property_'+table_name
-        self.default_table_name = 'default_'+table_name
-        logging.debug(f"Connecting to database at {db_url}...")
+        self.attr_table_name = 'attr_'+ self.table_name
+        self.tine_table_name = 'tine_'+ self.table_name
+        self.property_table_name = 'property_'+ self.table_name
+        self.default_table_name = 'default_'+ self.table_name
+        logging.debug(f"Connecting to database at {self.db_url}...")
         self.attr_table = self.db[self.attr_table_name]
         self.tine_table = self.db[self.tine_table_name]
         self.property_table = self.db[self.property_table_name]
         self.default_table = self.db[self.default_table_name]
         logging.debug("Creating tables if they do not exist...")
-        self._attr_table_creator(self.attr_table)
-        self._tine_table_creator(self.tine_table)
-        self._property_table_creator(self.property_table)
-        self._default_table_creator(self.default_table)
+        #self._attr_table_creator(self.attr_table)
+        #self._tine_table_creator(self.tine_table)
+        #self._property_table_creator(self.property_table)
+        #self._default_table_creator(self.default_table)
         self.in_queue = in_queue
         self.stop_event = asyncio.Event()
         self.t0 = time.time()
@@ -52,14 +66,29 @@ class DatabaseWriter():
         #return self.db, self.attr_table, self.tine_table, self.property_table
 
 
+    async def stop(self):
+        self.stop_event.set()
+
+    async def start(self):
+        await self.run()
+
     def _attr_table_creator(self, table):
         """Create table and indexes if they do not exist.
         This is meant to be used with Tango attributes
         """
         if not table.exists:
-            logging.info(f"Creating table...")
+            logging.info(f"Creating table {table.name}")
+            # table.create_column("timestamp", dataset.types.datetime)
+            # table.create_column("device", type="string")
+            # table.create_column("attribute", type="string")
+            # table.create_column("value", type="float")
+            # table.create_column("unit", type="string")
+            # table.create_column("location", type="string")
+            # table.create_column("state", type="string")
+            # table.create_column("status", type="string")
+            # this is an alternative way to create the table by inserting a dummy row
             table.insert({
-                "timestamp": 0.0,
+                "timestamp": time.time(),
                 "device": "init",  # this is Tango (p21/test/exp.01) device 
                 "attribute": "init",    # this is Tango attribute (e.g. temperature)
                 "value": 0.0,
@@ -76,9 +105,20 @@ class DatabaseWriter():
     def _tine_table_creator(self, table):
         """Create table and indexes if they do not exist."""
         if not table.exists:
-            logging.info(f"Creating table")
+            logging.info(f"Creating table {table.name}")
+            # table.create_column("timestamp", type="datetime")
+            # table.create_column("context", type="string")
+            # table.create_column("server", type="string")
+            # table.create_column("device", type="string")
+            # table.create_column("property", type="string")
+            # table.create_column("value", type="float")
+            # table.create_column("unit", type="string")
+            # table.create_column("location", type="string")
+            # table.create_column("state", type="string")
+            # table.create_column("status", type="string")
+            # this is an alternative way to create the table by inserting a dummy row
             table.insert({
-                "timestamp": 0.0,
+                "timestamp": time.time(),
                 "context": "init",
                 "server": "init",
                 "device": "init",
@@ -99,9 +139,18 @@ class DatabaseWriter():
     def _property_table_creator(self, table):
         """Create table and indexes if they do not exist."""
         if not table.exists:
-            logging.info(f"Creating table")
+            logging.info(f"Creating table {table.name}")
+            # table.create_column("timestamp", type="datetime")
+            # table.create_column("sensor", type="string")
+            # table.create_column("property", type="string")
+            # table.create_column("value", type="float")
+            # table.create_column("unit", type="string")
+            # table.create_column("location", type="string")
+            # table.create_column("state", type="string")
+            # table.create_column("status", type="string")
+            # this is an alternative way to create the table by inserting a dummy row
             table.insert({
-                "timestamp": 0.0,
+                "timestamp": time.time(),
                 "sensor": "init",
                 "property": "init",
                 "value": 0.0,
@@ -118,9 +167,13 @@ class DatabaseWriter():
     def _default_table_creator(self, table):
         """Create table and indexes if they do not exist."""
         if not table.exists:
-            logging.info(f"Creating default table")
+            logging.info(f"Creating table {table.name}")
+            # table.create_column("timestamp", type="float")
+            # table.create_column("data_type", type="string")
+            # table.create_column("value", type="float")
+            # this is an alternative way to create the table by inserting a dummy row
             table.insert({
-                "timestamp": 0.0,
+                "timestamp": time.time(),
                 "data_type": "init",
                 "value": 0.0,
             })
@@ -133,6 +186,11 @@ class DatabaseWriter():
         Periodically checkpoint the WAL and occasionally VACUUM the database.
         Logs file sizes before and after maintenance.
         """
+        # Guard clause for non-SQLite backends, where explicit maintenance is not possible
+        if self.db_backend != "sqlite":
+            logging.warning("[DB] Maintenance called for non-SQLite backend — skipping.")
+            return
+        
         last_vacuum = self.t0
 
         while True:
@@ -144,7 +202,6 @@ class DatabaseWriter():
                 size_db = os.path.getsize(DB_PATH) / 1e6 if os.path.exists(DB_PATH) else 0
                 size_wal = os.path.getsize(wal_path) / 1e6 if os.path.exists(wal_path) else 0
                 size_shm = os.path.getsize(shm_path) / 1e6 if os.path.exists(shm_path) else 0
-
 
                 # --- Run WAL checkpoint ---
                 if time.time() - self.t0 > 10:  # suppress initial messages
@@ -174,6 +231,54 @@ class DatabaseWriter():
 
             await asyncio.sleep(MAINTENANCE_INTERVAL)
 
+    def ensure_datetime(self, ts):
+        from datetime import datetime, timezone
+        if isinstance(ts, (float, int)):
+            return datetime.fromtimestamp(ts, tz=timezone.utc)
+        elif isinstance(ts, datetime):
+            return ts.astimezone(timezone.utc)
+        else:
+            raise TypeError(f"Unsupported timestamp type: {type(ts)}")
+
+    def ensure_datetime_advanced(self, ts):
+        """
+        Convert various timestamp formats (float, int, str, datetime)
+        into a timezone-aware UTC datetime object.
+        """
+        # Case 1: UNIX timestamp (float or int)
+        if isinstance(ts, (float, int)):
+            return datetime.fromtimestamp(ts, tz=timezone.utc)
+
+        # Case 2: datetime object
+        elif isinstance(ts, datetime):
+            # If naive, assume it's UTC
+            if ts.tzinfo is None:
+                return ts.replace(tzinfo=timezone.utc)
+            # Otherwise, normalize to UTC
+            return ts.astimezone(timezone.utc)
+
+        # Case 3: ISO-8601 string
+        elif isinstance(ts, str):
+            try:
+                parsed = dateutil.parser.isoparse(ts)
+                # If parsed datetime is naive, assume UTC
+                if parsed.tzinfo is None:
+                    parsed = parsed.replace(tzinfo=timezone.utc)
+                return parsed.astimezone(timezone.utc)
+            except Exception as e:
+                raise ValueError(f"Unrecognized timestamp string: {ts!r} ({e})")
+
+        else:
+            raise TypeError(f"Unsupported timestamp type: {type(ts).__name__}")
+
+    def ensure_fields(self, msg):
+        """Ensure required fields are present in the message."""
+        required_fields = ["id", "timestamp", "value", "state"]
+        for field in required_fields:
+            if field not in msg:
+                raise KeyError(f"Missing required field: {field}")
+        return True
+
     async def consumer(self, batch_size=BATCH_SIZE, flush_interval=FLUSH_INTERVAL):
         queue = self.in_queue
         attr_batch, tine_batch, property_batch = [], [], []
@@ -184,7 +289,10 @@ class DatabaseWriter():
         while not (self.stop_event.is_set() and queue.empty()):
             try:
                 msg = await asyncio.wait_for(queue.get(), timeout=flush_interval)
-                # decide which table to use based on msg content
+                # Convert UNIX timestamp (float) → datetime
+                #msg["timestamp"] = self.ensure_datetime(msg["timestamp"])
+
+                # Dispatch to the correct batch
                 if "attribute" in msg:
                     attr_batch.append(msg)
                 elif "property" in msg:
@@ -193,7 +301,7 @@ class DatabaseWriter():
                     tine_batch.append(msg)
                 else:
                     #raise ValueError("Unknown message type for database insertion")
-                    default_batch.append({'timestamp': msg['timestamp']})
+                    default_batch.append(msg['timestamp'])
                 queue.task_done()
             except asyncio.TimeoutError:
                 pass
@@ -242,14 +350,22 @@ class DatabaseWriter():
 
     async def run(self):
         self.consumer_task = asyncio.create_task(self.consumer())
-        self.maintenance_task = asyncio.create_task(self._database_maintenance(self.db))
+
+        # Only start maintenance for SQLite
+        if self.db_backend == "sqlite":
+            logging.info("[DB] Starting SQLite maintenance task.")
+            self.maintenance_task = asyncio.create_task(self._database_maintenance(self.db))
+            await self.maintenance_task
+        else:
+            self.maintenance_task = None
+            logging.info(f"[DB] Maintenance skipped for backend '{self.db_backend}'")
 
         await self.consumer_task
-        await self.maintenance_task
 
         await self.stop_event.wait()
         self.consumer_task.cancel()
-        self.maintenance_task.cancel()
+        if self.maintenance_task:
+            self.maintenance_task.cancel()
 
 
 
@@ -337,10 +453,14 @@ async def producer(queue, stop_event):
         for sensor in sensors:
             if random.random() < 0.7:  # simulate varying rates
                 msg = {
+                    "id": uuid.uuid4().hex,
                     "timestamp": time.time(),
+                    "value": round(random.uniform(20, 25), 2),
+                    "state": "OK",
+
                     "sensor": sensor,
                     "property": "temperature",
-                    "value": round(random.uniform(20, 25), 2),
+                    "value2": round(random.uniform(100, 200), 2),
                 }
                 await queue.put(msg)
         await asyncio.sleep(0.2)
@@ -442,11 +562,18 @@ async def main2():
     print("[MAIN] Shutdown complete. Database closed.")
 
 
+async def main_class():
+    queue = asyncio.Queue()
+    stop_event = asyncio.Event()
+    stop_event.clear()
 
+    DBW = DatabaseWriter(queue)
 
+    producer_task = asyncio.create_task(producer(queue, stop_event))
+    await DBW.start()
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main2())
+        asyncio.run(main_class())
     except KeyboardInterrupt:
         print("\nForced exit.")
