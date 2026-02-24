@@ -3,6 +3,7 @@ import logging
 from queue import Queue, Empty
 import json
 import time
+import ntplib
 import asyncio
 import gzip
 import base64
@@ -19,7 +20,20 @@ from current_state import OverwritingSingleSlotQueue
 CRED_PATH = "./credits.creds"
 USE_GZIP = True  # Set to True to enable gzip compression
 VERBOSE = False
+NTP_SERVER = "ntp.desy.de"
+NTP_TIMEOUT = 2  # seconds
 
+def get_offset(ntp_server=NTP_SERVER):
+    try:
+        client = ntplib.NTPClient()
+        response = client.request(ntp_server, version=3, timeout=NTP_TIMEOUT)
+        return response.offset  # seconds
+    except Exception:
+        return 0
+
+async def get_offset_async(ntp_server=NTP_SERVER):
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, get_offset, ntp_server)
 
 class UpdatePublisher:
     def __init__(self, update_queue: Queue, topic: str = "sensors.updates"):
@@ -34,6 +48,7 @@ class UpdatePublisher:
         self.state = "not ready"
         self.t0 = time.time()
         self.last_publish_time = 0
+        self.published_updates = 0
 
     async def _init_nats_publisher(self):
         logging.info("Initializing NATS connection...")
@@ -54,11 +69,13 @@ class UpdatePublisher:
         """
         await self._init_nats_publisher()
         asyncio.create_task(self._publish_updates(self.topic))
+        asyncio.create_task(self._publish_telemetry("sensors.telemetry"))
         self.state = "ready"
 
     @property
     def publish_time_constant(self):
         return self._publish_time_constant
+    
     @publish_time_constant.setter
     def publish_time_constant(self, value):
         try:
@@ -71,6 +88,20 @@ class UpdatePublisher:
             self._publish_time_constant = 5.0
         else:
             self._publish_time_constant = value
+
+    async def _publish_telemetry(self, topic: str='sensor.telemetry'):
+        """
+        Publish telemetry data to NATS.
+        """
+        while not self._shutdown_event.is_set():
+            telemetry_data = {
+                "timestamp": time.time(),
+                "server_clock_offset": await get_offset_async(),
+            }
+            encoded_data = json.dumps(telemetry_data).encode()
+            await self.nc.publish(topic, encoded_data)
+            logging.info(f"Published telemetry to {topic} at {time.time() - self.t0:.2f} s")
+            await asyncio.sleep(10)  # Publish every 10 seconds
 
     async def _publish_updates(self, topic: str):
         """
@@ -96,7 +127,13 @@ class UpdatePublisher:
                     if VERBOSE:
                         logging.info(dct)
                     encoded_data = self._encode_data(dct, USE_GZIP)
-                    await self.nc.publish(topic, encoded_data)
+                    headers = {"encoding": "gzip" if USE_GZIP else 'None',
+                               "producer": "UpdatePublisher",
+                               "timestamp": str(time.time()),
+                               "message_id": str(self.published_updates + 1),
+                               }
+                    await self.nc.publish(topic, encoded_data, headers=headers)
+                    self.published_updates += 1
                     logging.info(f"Published update to {topic} @ {time.time() - self.t0:.2f} s, dt = {1000*(time.time() - self.last_publish_time):.2f} ms")
                     self.last_publish_time = time.time()
             elapsed = time.monotonic() - start

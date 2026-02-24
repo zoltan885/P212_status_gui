@@ -33,7 +33,7 @@ rootLogger.setLevel(logging.DEBUG)
 
 
 
-SIMULATE = False
+SIMULATE = True
 
 async def main():
     queue = asyncio.Queue()
@@ -88,7 +88,7 @@ async def main():
     # print("DatabaseWriter starting...")
     # await DBW.run()
     
-    sleep_time = 200
+    sleep_time = 50000
     print(f"Sleeping for {sleep_time} seconds...")
     await asyncio.sleep(sleep_time/2)
     # print('\nON DEMAND SNAPSHOT')
